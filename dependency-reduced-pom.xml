@@ -242,7 +242,7 @@
     </repository>
     <repository>
       <id>my-local-repo</id>
-      <url>file://C:/Users/Andrew/Dropbox/.m2/repository</url>
+      <url>file://C:/Users/Andrew/.m2/repository</url>
     </repository>
     <repository>
       <id>spigot-repo</id>
