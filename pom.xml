@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.runelynx.runicuniverse</groupId>
 	<artifactId>RunicUniverse</artifactId>
@@ -20,9 +20,9 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.bukkit</groupId>
-			<artifactId>bukkit</artifactId>
-			<version>1.12.1-R0.1-SNAPSHOT</version>
+			<groupId>org.spigotmc</groupId>
+			<artifactId>spigot-api</artifactId>
+			<version>1.13-R0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>net.milkbowl.vault</groupId>
@@ -39,14 +39,14 @@
 	</dependencies>
 
 	<build>
-		<sourceDirectory>C:\Users\Andrew\Dropbox\Eclipse Workspace\RunicUniverse\src\main\java</sourceDirectory>
-		<scriptSourceDirectory>C:\Users\Andrew\Dropbox\Eclipse Workspace\RunicUniverse\src\main\scripts</scriptSourceDirectory>
-		<testSourceDirectory>C:\Users\Andrew\Dropbox\Eclipse Workspace\RunicUniverse\src\test\java</testSourceDirectory>
-		<outputDirectory>C:\Users\Andrew\Dropbox\Eclipse Workspace\RunicUniverse\target\classes</outputDirectory>
-		<testOutputDirectory>C:\Users\Andrew\Dropbox\Eclipse Workspace\RunicUniverse\target\test-classes</testOutputDirectory>
+		<sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+		<!--<scriptSourceDirectory>${project.basedir}/src/main/scripts</scriptSourceDirectory>-->
+		<!--<testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>-->
+		<outputDirectory>${project.basedir}/target/classes</outputDirectory>
+		<testOutputDirectory>${project.basedir}/target/test-classes</testOutputDirectory>
 		<resources>
 			<resource>
-				<directory>C:\Users\Andrew\Dropbox\Eclipse Workspace\RunicUniverse\src</directory>
+				<directory>${project.basedir}/src</directory>
 				<includes>
 					<include>plugin.yml</include>
 					<include>config.yml</include>
@@ -55,10 +55,10 @@
 		</resources>
 		<testResources>
 			<testResource>
-				<directory>C:\Users\Andrew\Dropbox\Eclipse Workspace\RunicUniverse\src\test\resources</directory>
+				<directory>${project.basedir}/src/test/resources</directory>
 			</testResource>
 		</testResources>
-		<directory>C:\Users\Andrew\Dropbox\Eclipse Workspace\RunicUniverse\target</directory>
+		<directory>${project.basedir}/target</directory>
 		<finalName>RunicUniverse</finalName>
 		<pluginManagement>
 			<plugins>
@@ -125,7 +125,7 @@
 						<configuration>
 							<transformers>
 								<transformer
-									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+										implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<mainClass>com.group.id.Launcher1</mainClass>
 								</transformer>
 							</transformers>
@@ -229,8 +229,7 @@
 							<goal>site</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>C:\Users\Andrew\Dropbox\Eclipse
-								Workspace\RunicUniverse\target\site</outputDirectory>
+							<outputDirectory>${project.basedir}/target/site</outputDirectory>
 							<reportPlugins>
 								<reportPlugin>
 									<groupId>org.apache.maven.plugins</groupId>
@@ -246,26 +245,12 @@
 							<goal>deploy</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>C:\Users\Andrew\Dropbox\Eclipse
-								Workspace\RunicUniverse\target\site</outputDirectory>
-							<reportPlugins>
-								<reportPlugin>
-									<groupId>org.apache.maven.plugins</groupId>
-									<artifactId>maven-project-info-reports-plugin</artifactId>
-								</reportPlugin>
-							</reportPlugins>
+							<outputDirectory>${project.basedir}/target/site</outputDirectory>
 						</configuration>
 					</execution>
 				</executions>
 				<configuration>
-					<outputDirectory>C:\Users\Andrew\Dropbox\Eclipse
-						Workspace\RunicUniverse\target\site</outputDirectory>
-					<reportPlugins>
-						<reportPlugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-project-info-reports-plugin</artifactId>
-						</reportPlugin>
-					</reportPlugins>
+					<outputDirectory>${project.basedir}/target/site</outputDirectory>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -277,18 +262,9 @@
 			<url>http://nexus.hc.to/content/repositories/pub_releases</url>
 		</repository>
 		<repository>
-			<id>my-local-repo</id>
-			<url>file://C:/Users/Andrew/.m2/repository</url>
-		</repository>
-		<repository>
 			<id>spigot-repo</id>
 			<url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
 		</repository>
-		<repository>
-			<id>stealthyone-repo</id>
-			<url>http://repo.stealthyone.com/content/groups/public</url>
-		</repository>
-
 	</repositories>
 
 </project>
