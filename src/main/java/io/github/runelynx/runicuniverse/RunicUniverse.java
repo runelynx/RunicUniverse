@@ -1,28 +1,13 @@
 package io.github.runelynx.runicuniverse;
 
-import static org.bukkit.Bukkit.getLogger;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
-import java.util.logging.Level;
-
-import org.bukkit.ChatColor;
+import com.google.common.collect.Iterables;
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
+import io.github.runelynx.runicuniverse.RunicMessaging.RunicFormat;
 import net.milkbowl.vault.permission.Permission;
-
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -43,14 +28,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.bukkit.scheduler.BukkitScheduler;
 
-import com.google.common.collect.Iterables;
-import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
-
-
-import io.github.runelynx.runicuniverse.MySQL;
-import io.github.runelynx.runicuniverse.RunicMessaging.RunicFormat;
+import java.io.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.*;
+import java.util.logging.Level;
 
 public class RunicUniverse extends JavaPlugin implements PluginMessageListener, Listener {
 
@@ -376,41 +360,41 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 		treeLore.add(ChatColor.YELLOW + "worlds. Just click where you ");
 		treeLore.add(ChatColor.YELLOW + "want to go!");
 
-		ItemStack tree = new ItemStack(Material.SAPLING, 1, (short) 3);
+		ItemStack tree = new ItemStack(Material.ACACIA_SAPLING, 1);
 		meta = tree.getItemMeta();
 		meta.setDisplayName(ChatColor.GOLD + "" + ChatColor.BOLD + "Astrid Warp Menu");
 		meta.setLore(treeLore);
 		tree.setItemMeta(meta);
 
-		ItemStack flower1 = new ItemStack(Material.RED_ROSE, 1, (short) random.nextInt(8 + 1));
+		ItemStack flower1 = new ItemStack(Material.ROSE_RED, 1);
 		meta = flower1.getItemMeta();
 		meta.setDisplayName("");
 		flower1.setItemMeta(meta);
-		ItemStack flower2 = new ItemStack(Material.RED_ROSE, 1, (short) random.nextInt(8 + 1));
+		ItemStack flower2 = new ItemStack(Material.ROSE_RED, 1);
 		meta = flower2.getItemMeta();
 		meta.setDisplayName("");
 		flower2.setItemMeta(meta);
-		ItemStack flower3 = new ItemStack(Material.RED_ROSE, 1, (short) random.nextInt(8 + 1));
+		ItemStack flower3 = new ItemStack(Material.ROSE_RED, 1);
 		meta = flower3.getItemMeta();
 		meta.setDisplayName("");
 		flower3.setItemMeta(meta);
-		ItemStack flower4 = new ItemStack(Material.RED_ROSE, 1, (short) random.nextInt(8 + 1));
+		ItemStack flower4 = new ItemStack(Material.ROSE_RED, 1);
 		meta = flower4.getItemMeta();
 		meta.setDisplayName("");
 		flower4.setItemMeta(meta);
-		ItemStack flower5 = new ItemStack(Material.RED_ROSE, 1, (short) random.nextInt(8 + 1));
+		ItemStack flower5 = new ItemStack(Material.ROSE_RED, 1);
 		meta = flower5.getItemMeta();
 		meta.setDisplayName("");
 		flower5.setItemMeta(meta);
-		ItemStack flower6 = new ItemStack(Material.RED_ROSE, 1, (short) random.nextInt(8 + 1));
+		ItemStack flower6 = new ItemStack(Material.ROSE_RED, 1);
 		meta = flower6.getItemMeta();
 		meta.setDisplayName("");
 		flower6.setItemMeta(meta);
-		ItemStack flower7 = new ItemStack(Material.RED_ROSE, 1, (short) random.nextInt(8 + 1));
+		ItemStack flower7 = new ItemStack(Material.ROSE_RED, 1);
 		meta = flower7.getItemMeta();
 		meta.setDisplayName("");
 		flower7.setItemMeta(meta);
-		ItemStack flower8 = new ItemStack(Material.RED_ROSE, 1, (short) random.nextInt(8 + 1));
+		ItemStack flower8 = new ItemStack(Material.ROSE_RED, 1);
 		meta = flower8.getItemMeta();
 		meta.setDisplayName("");
 		flower8.setItemMeta(meta);
