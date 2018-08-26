@@ -4,6 +4,7 @@ author: runelynx
 description: "Bukkit plugin for Runic Universe server."
 main: io.github.runelynx.runicuniverse.RunicUniverse
 version: 0.1
+api-version: 1.13
 commands:
    announce:
       description: "Announcement management tool for staff"
