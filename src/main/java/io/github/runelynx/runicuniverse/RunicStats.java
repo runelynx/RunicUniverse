@@ -1,5 +1,9 @@
 package io.github.runelynx.runicuniverse;
 
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitScheduler;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -8,29 +12,13 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.logging.Level;
 
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitScheduler;
-
 public class RunicStats {
-
 	static void startScheduledStatTask_OnlinePlayers() {
-
 		BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
-
-		scheduler.runTaskTimerAsynchronously(RunicUniverse.getInstance(), new Runnable() {
-
-			@Override
-			public void run() {
-				recordOnlinePlayers();
-			}
-
-		}, 0L, 6000L);
-
+		scheduler.runTaskTimerAsynchronously(RunicUniverse.getInstance(), RunicStats::recordOnlinePlayers, 0L, 6000L);
 	}
 
 	private static void recordOnlinePlayers() {
-
 		int staffOnline = 0;
 		int nonStaffOnline = 0;
 		int totalPlayersOnline = 0;

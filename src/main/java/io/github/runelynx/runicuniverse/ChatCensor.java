@@ -1,11 +1,6 @@
 package io.github.runelynx.runicuniverse;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-
+import io.github.runelynx.runicuniverse.RunicMessaging.RunicFormat;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -13,15 +8,17 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 
-import io.github.runelynx.runicuniverse.RunicMessaging.RunicFormat;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
 
 public class ChatCensor {
-	
-	public static ArrayList<String> censoredWords = new ArrayList<String>();
+	public static ArrayList<String> censoredWords = new ArrayList<>();
 	
 	public static Boolean addBadWordToYML(String newBadWord, String changerName) {
-
-		String editedBadWord = "";
+		String editedBadWord;
 
 		if (newBadWord.length() < 3) {
 			return false;
@@ -51,19 +48,15 @@ public class ChatCensor {
 					"FAILED: " + changerName + " added bad word to the censor list: " + editedBadWord);
 			e.printStackTrace();
 			return false;
-
 		}
-
 	}
 
 	public static Boolean removeBadWordFromYML(String badWord, String changerName) {
-
 		String filename = "RunicData.yml";
 		File dataFile = new File("/home/AMP/.ampdata/instances/Survival/Minecraft/plugins", filename);
 		FileConfiguration dataConfig = YamlConfiguration.loadConfiguration(dataFile);
 
 		try {
-
 			List<String> words = dataConfig.getStringList("Badwords");
 
 			words.remove(badWord);
@@ -79,25 +72,20 @@ public class ChatCensor {
 					"FAILED: " + changerName + " removed bad word from the censor list: " + badWord);
 			e.printStackTrace();
 			return false;
-
 		}
-
 	}
 	
 	public static List<String> listBadWordsFromYML() {
-
 		String filename = "RunicData.yml";
 		File dataFile = new File("/home/AMP/.ampdata/instances/Survival/Minecraft/plugins", filename);
 		FileConfiguration dataConfig = YamlConfiguration.loadConfiguration(dataFile);
 
-		List<String> badWordsList = dataConfig.getStringList("Badwords");
-		return badWordsList;
+		return dataConfig.getStringList("Badwords");
 
 	}
 
 	public static void cleansePlayerChat(AsyncPlayerChatEvent chat) {
-
-		Boolean censor = false;
+		boolean censor = false;
 
 		for (String bws : listBadWordsFromYML()) {
 			if (bws.length() == 3) {
@@ -110,7 +98,6 @@ public class ChatCensor {
 		}
 
 		if (censor) {
-
 			if (chat.getPlayer().hasPermission("rp.chatfilterwarning2")) {
 
 				Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
@@ -141,5 +128,4 @@ public class ChatCensor {
 			}
 		}
 	}
-
 }

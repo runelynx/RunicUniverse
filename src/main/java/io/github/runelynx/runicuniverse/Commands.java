@@ -1,16 +1,10 @@
 package io.github.runelynx.runicuniverse;
 
-import static org.bukkit.ChatColor.GRAY;
-import static org.bukkit.ChatColor.UNDERLINE;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.logging.Level;
-
-import org.bukkit.ChatColor;
-
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
+import io.github.runelynx.runicuniverse.RunicMessaging.RunicFormat;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -19,11 +13,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 
-import io.github.runelynx.runicuniverse.RunicMessaging.RunicFormat;
-;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
 
 /**
  * 
@@ -40,14 +34,13 @@ public class Commands implements CommandExecutor {
 
 		switch (cmd.getName()) {
 		case "evacuate":
-			if (((Player) sender).hasPermission("rp.staff.evacuate")) {
+			if (sender.hasPermission("rp.staff.evacuate")) {
 				for (Player p : Bukkit.getOnlinePlayers()) {
 					goToServer("Hub", p);
 				}
 			}
 		case "staffrank":
 			if (args.length == 2) {
-
 				MySQL MySQL = new MySQL(instance, instance.getConfig().getString("dbHost"),
 						instance.getConfig().getString("dbPort"), instance.getConfig().getString("dbDatabase"),
 						instance.getConfig().getString("dbUser"), instance.getConfig().getString("dbPassword"));
@@ -61,7 +54,6 @@ public class Commands implements CommandExecutor {
 							"Rank name must by typed exactly as shown here. Case sensitive!");
 
 				} else {
-
 					Connection z = MySQL.openConnection();
 					try {
 						//
@@ -81,91 +73,70 @@ public class Commands implements CommandExecutor {
 						"Bad syntax! /staffrank <player> <Admin/Director/Architect/Enforcer/Helper/None>");
 			}
 			return true;
-		case "news":
-			final MySQL MySQL = new MySQL(instance, "192.186.247.135", "3306", "rpnews", "rpwebsite", "rpweb123");
-
-			Connection z = MySQL.openConnection();
-
-			try {
-				// clear the table
-				Statement insertStmt = z.createStatement();
-				ResultSet newsResult = insertStmt
-						.executeQuery("SELECT * FROM news WHERE Status = 'Live' ORDER BY NewsID DESC LIMIT 3;");
-
-				sender.sendMessage(ChatColor.GOLD + "=== Runic Universe News ===");
-				sender.sendMessage(ChatColor.YELLOW + "" + ChatColor.ITALIC + "Latest 3 news items:");
-				int counter = 1;
-				while (newsResult.next()) {
-
-					
-					sender.sendMessage(ChatColor.GREEN + newsResult.getString("Title"));
-					sender.sendMessage(ChatColor.GRAY + " " + counter + " " + "http://www.runic-paradise.com/newsdetail.php?newsid=" + newsResult.getInt("NewsID"));
-
-					counter++;
-				}
-				z.close();
-				return true;
-			} catch (SQLException e) {
-				Bukkit.getLogger().log(Level.SEVERE, "Could not retrieve news from website - " + e.getMessage());
-			}
-
-			break;
 		case "censor":
 			if (args.length > 0) {
-				if (args[0].equals("RC") || args[0].equals("rc")) {
-					if (((Player) sender).hasPermission("rp.staff.director")) {
-						// Remove censored word
-						if (ChatCensor.removeBadWordFromYML(args[1], sender.getName())) {
-							// Success
-							RunicMessaging.sendMessage((Player) sender, RunicMessaging.RunicFormat.JUSTICE,
-									args[1] + " has been removed from the censorship list.");
+				switch (args[0]) {
+					case "RC":
+					case "rc":
+						if (sender.hasPermission("rp.staff.director")) {
+							// Remove censored word
+							if (ChatCensor.removeBadWordFromYML(args[1], sender.getName())) {
+								// Success
+								RunicMessaging.sendMessage((Player) sender, RunicFormat.JUSTICE,
+										args[1] + " has been removed from the censorship list.");
+							} else {
+								// Failure
+								RunicMessaging.sendMessage((Player) sender,
+										RunicFormat.ERROR,
+										"Something went wrong.");
+							}
 						} else {
-							// Failure
-							RunicMessaging.sendMessage((Player) sender,
-									io.github.runelynx.runicuniverse.RunicMessaging.RunicFormat.ERROR,
-									"Something went wrong.");
+							RunicMessaging.sendMessage((Player) sender, RunicFormat.ERROR,
+									"Only directors+ can do that.");
 						}
-					} else {
-						RunicMessaging.sendMessage((Player) sender, RunicMessaging.RunicFormat.ERROR,
-								"Only directors+ can do that.");
-					}
-				} else if (args[0].equals("AC") || args[0].equals("ac")) {
-					if (((Player) sender).hasPermission("rp.staff.director")) {
-						// Add censored word
-						if (ChatCensor.addBadWordToYML(args[1], sender.getName())) {
-							// Success
-							RunicMessaging.sendMessage((Player) sender, RunicMessaging.RunicFormat.JUSTICE,
-									args[1] + " has been added to the censorship list.");
+						break;
+					case "AC":
+					case "ac":
+						if (sender.hasPermission("rp.staff.director")) {
+							// Add censored word
+							if (ChatCensor.addBadWordToYML(args[1], sender.getName())) {
+								// Success
+								RunicMessaging.sendMessage((Player) sender, RunicFormat.JUSTICE,
+										args[1] + " has been added to the censorship list.");
+							} else {
+								// Failure
+								RunicMessaging.sendMessage((Player) sender, RunicFormat.ERROR,
+										"Something went wrong. Maybe that word isn't on the list?");
+							}
 						} else {
-							// Failure
-							RunicMessaging.sendMessage((Player) sender, RunicMessaging.RunicFormat.ERROR,
-									"Something went wrong. Maybe that word isn't on the list?");
+							RunicMessaging.sendMessage((Player) sender, RunicFormat.ERROR,
+									"Only directors+ can do that.");
 						}
-					} else {
-						RunicMessaging.sendMessage((Player) sender, RunicMessaging.RunicFormat.ERROR,
-								"Only directors+ can do that.");
-					}
-				} else if (args[0].equals("LC") || args[0].equals("lc")) {
-					if (((Player) sender).hasPermission("rp.staff.director")) {
-						RunicMessaging.sendMessage((Player) sender, RunicMessaging.RunicFormat.JUSTICE,
-								"Current censorship list:");
-						RunicMessaging.sendMessage((Player) sender, RunicMessaging.RunicFormat.EMPTY,
-								ChatCensor.listBadWordsFromYML().toString());
-					} else {
-						RunicMessaging.sendMessage((Player) sender, RunicMessaging.RunicFormat.ERROR,
-								"Only directors+ can do that.");
-					}
-				} else {
-					if (((Player) sender).hasPermission("rp.staff.director")) {
-						sender.sendMessage(ChatColor.AQUA + "/censor lc" + ChatColor.GRAY + " List censored words");
-						sender.sendMessage(
-								ChatColor.AQUA + "/censor ac <badword>" + ChatColor.GRAY + " Add censored word");
-						sender.sendMessage(
-								ChatColor.AQUA + "/censor rc <badword>" + ChatColor.GRAY + " Remove censored word");
-					}
+						break;
+					case "LC":
+					case "lc":
+						if (sender.hasPermission("rp.staff.director")) {
+							RunicMessaging.sendMessage((Player) sender, RunicFormat.JUSTICE,
+									"Current censorship list:");
+							RunicMessaging.sendMessage((Player) sender, RunicFormat.EMPTY,
+									ChatCensor.listBadWordsFromYML().toString());
+						} else {
+							RunicMessaging.sendMessage((Player) sender, RunicFormat.ERROR,
+									"Only directors+ can do that.");
+						}
+						break;
+					default:
+						if (sender.hasPermission("rp.staff.director")) {
+							sender.sendMessage(ChatColor.AQUA + "/censor lc" + ChatColor.GRAY + " List censored words");
+							sender.sendMessage(
+									ChatColor.AQUA + "/censor ac <badword>" + ChatColor.GRAY + " Add censored word");
+							sender.sendMessage(
+									ChatColor.AQUA + "/censor rc <badword>" + ChatColor.GRAY + " Remove censored word");
+						}
+						break;
 				}
 			} else {
-				if (((Player) sender).hasPermission("rp.staff.director")) {
+				if (sender.hasPermission("rp.staff.director")) {
 					sender.sendMessage(ChatColor.AQUA + "/censor lc" + ChatColor.GRAY + " List censored words");
 					sender.sendMessage(ChatColor.AQUA + "/censor ac <badword>" + ChatColor.GRAY + " Add censored word");
 					sender.sendMessage(
@@ -193,13 +164,13 @@ public class Commands implements CommandExecutor {
 						return true;
 					}
 
-					String buildTemp = "";
+					StringBuilder buildTemp = new StringBuilder();
 
 					for (int ii = 2; ii < args.length; ii++) {
 						String arg = args[ii] + " ";
-						buildTemp = buildTemp + arg;
+						buildTemp.append(arg);
 					}
-					RunicMessaging.setAnnouncement(((Player) sender), Integer.parseInt(args[1]), buildTemp);
+					RunicMessaging.setAnnouncement(((Player) sender), Integer.parseInt(args[1]), buildTemp.toString());
 
 				} else if (args[0].equals("TA") || args[0].equals("ta")) {
 					if (!(args.length == 2)) {
@@ -249,70 +220,58 @@ public class Commands implements CommandExecutor {
 			RunicUniverse.showHubAstridTravelMenu(((Player) sender));
 			return true;
 		case "runicholo":
-			Boolean error = false;
-			Double height = 0.0;
-			if (args.length > 0 && args[0].equalsIgnoreCase("create")) {
-
-				switch (args[1]) {
-				case "1":
-					height = 0.5;
-					break;
-				case "2":
-					height = 0.75;
-					break;
-				case "3":
-					height = 1.0;
-					break;
-				default:
-					error = true;
-					break;
-				}
-
-				ArmorStand a = ((Player) sender).getLocation().getWorld()
-						.spawn(((Player) sender).getLocation().subtract(0, height, 0), ArmorStand.class);
-				a.setGravity(false);
-				a.setVisible(false);
-				a.setCustomName(ChatColor.translateAlternateColorCodes('&', args[2].replace('_', ' ')));
-				a.setCustomNameVisible(true);
-				return true;
-
-			} else if (args.length > 0 && args[0].equalsIgnoreCase("show")) {
-
-				for (Entity e : ((Player) sender).getNearbyEntities(2, 2, 2)) {
-					if (e.getType() == EntityType.ARMOR_STAND) {
-						((ArmorStand) e).setVisible(true);
+			double height = 0.0;
+			if (args.length > 0) {
+				if (args[0].equalsIgnoreCase("create")) {
+					switch (args[1]) {
+						case "1":
+							height = 0.5;
+							break;
+						case "2":
+							height = 0.75;
+							break;
+						case "3":
+							height = 1.0;
+							break;
+						default:
+							break;
 					}
-				}
-				return true;
 
-			} else if (args.length > 0 && args[0].equalsIgnoreCase("hide")) {
-				for (Entity e : ((Player) sender).getNearbyEntities(2, 2, 2)) {
-					if (e.getType() == EntityType.ARMOR_STAND) {
-						((ArmorStand) e).setVisible(false);
+					ArmorStand a = ((Player) sender).getLocation().getWorld()
+							.spawn(((Player) sender).getLocation().subtract(0, height, 0), ArmorStand.class);
+					a.setGravity(false);
+					a.setVisible(false);
+					a.setCustomName(ChatColor.translateAlternateColorCodes('&', args[2].replace('_', ' ')));
+					a.setCustomNameVisible(true);
+					return true;
+				} else if (args[0].equalsIgnoreCase("show")) {
+					for (Entity e : ((Player) sender).getNearbyEntities(2, 2, 2)) {
+						if (e.getType() == EntityType.ARMOR_STAND) {
+							((ArmorStand) e).setVisible(true);
+						}
 					}
+					return true;
+				} else if (args[0].equalsIgnoreCase("hide")) {
+					for (Entity e : ((Player) sender).getNearbyEntities(2, 2, 2)) {
+						if (e.getType() == EntityType.ARMOR_STAND) {
+							((ArmorStand) e).setVisible(false);
+						}
+					}
+					return true;
 				}
-				return true;
-			} else {
-				// malformed command
-				error = true;
 			}
 
-			if (error) {
-				sender.sendMessage(ChatColor.DARK_PURPLE + "Rune's Handy Dandy Hologram Help:");
-				sender.sendMessage("/runicholo create 1 TopLine_Hologram");
-				sender.sendMessage("/runicholo create 2 MidLine_Hologram");
-				sender.sendMessage("/runicholo create 3 BottomLine_Hologram");
-				sender.sendMessage("/runicholo show (Reveal nearby hologram stand)");
-				sender.sendMessage("/runicholo hide (Hide nearby hologram stand)");
-				sender.sendMessage(ChatColor.LIGHT_PURPLE + "No spaces in holograms! Use underscore!");
-				sender.sendMessage(ChatColor.LIGHT_PURPLE + "Color codes work!! /info colors");
-				sender.sendMessage(ChatColor.LIGHT_PURPLE + "Only use holograms in areas OK'd by an Admin!");
-				return true;
-			}
-
-			break;
-		default:
-			break;
+			// If it gets here it's always error
+			sender.sendMessage(ChatColor.DARK_PURPLE + "Rune's Handy Dandy Hologram Help:");
+			sender.sendMessage("/runicholo create 1 TopLine_Hologram");
+			sender.sendMessage("/runicholo create 2 MidLine_Hologram");
+			sender.sendMessage("/runicholo create 3 BottomLine_Hologram");
+			sender.sendMessage("/runicholo show (Reveal nearby hologram stand)");
+			sender.sendMessage("/runicholo hide (Hide nearby hologram stand)");
+			sender.sendMessage(ChatColor.LIGHT_PURPLE + "No spaces in holograms! Use underscore!");
+			sender.sendMessage(ChatColor.LIGHT_PURPLE + "Color codes work!! /info colors");
+			sender.sendMessage(ChatColor.LIGHT_PURPLE + "Only use holograms in areas OK'd by an Admin!");
+			return true;
 		}
 
 		return false;
@@ -322,11 +281,6 @@ public class Commands implements CommandExecutor {
 		ByteArrayDataOutput out = ByteStreams.newDataOutput();
 		out.writeUTF("Connect");
 		out.writeUTF(serverName);
-
-		// If you don't care about the player
-		// Player player = Iterables.getFirst(Bukkit.getOnlinePlayers(),
-		// null);
-		// Else, specify them
 
 		player.sendPluginMessage(instance, "BungeeCord", out.toByteArray());
 	}

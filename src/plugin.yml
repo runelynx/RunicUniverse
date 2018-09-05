@@ -41,6 +41,3 @@ commands:
       usage: "/<command> playername staffrank/none"
       permission: ru.staffpromotion
       permission-message: "You don't have permission: <permission>"
-   news:
-      description: "Get the news from our website"
-      usage: /<command>

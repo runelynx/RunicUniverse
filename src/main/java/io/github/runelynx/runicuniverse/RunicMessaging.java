@@ -1,12 +1,5 @@
 package io.github.runelynx.runicuniverse;
 
-import java.io.File;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Random;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -15,92 +8,51 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static org.bukkit.ChatColor.*;
+
 public class RunicMessaging {
 
 	private static int AnnTask = 0;
 
 	public enum RunicFormat {
-		AFTERLIFE(ChatColor.DARK_RED + "Runic" + ChatColor.DARK_GRAY + "Afterlife" + ChatColor.GRAY + " > " + ChatColor.GRAY),
-		BORDERLANDS(ChatColor.DARK_RED + "Border" + ChatColor.DARK_PURPLE + "Lands" + ChatColor.GRAY + " > " + ChatColor.AQUA),
-		FAITH(ChatColor.LIGHT_PURPLE + "RunicFaith" + ChatColor.GRAY + " > " + ChatColor.GRAY), 
-		CASINO(ChatColor.GOLD + "RunicCasino" + ChatColor.GRAY + " > " + ChatColor.GRAY), 
-		RANKS(
-						ChatColor.GREEN + "RunicRanks" + ChatColor.GRAY + " > " + ChatColor.GRAY), 
-		EXPLORER(
-								ChatColor.YELLOW + "ExplorersLeague" + ChatColor.GRAY + " > " + ChatColor.GRAY), 
-		EMPTY(
-										ChatColor.GRAY + ""), 
-		SYSTEM(ChatColor.DARK_AQUA + "RunicEngine"
-												+ ChatColor.GRAY + " > " + ChatColor.GRAY), 
-		RAFFLE(ChatColor.LIGHT_PURPLE
-														+ "Runic" + ChatColor.YELLOW + "Raffle" + ChatColor.GRAY + " > "
-														+ ChatColor.GRAY), 
-		HELP(ChatColor.BLUE + "Runic"
-																+ ChatColor.AQUA + "Help" + ChatColor.GRAY + " > "
-																+ ChatColor.GRAY), 
-		ERROR(
-																		ChatColor.DARK_RED + "Error" + ChatColor.RED
-																				+ " > " + ChatColor.GRAY), 
-		JUSTICE(
-																						ChatColor.YELLOW + "Runic"
-																								+ ChatColor.GOLD
-																								+ "Justice"
-																								+ ChatColor.GRAY + " > "
-																								+ ChatColor.GRAY);
+		AFTERLIFE(DARK_RED + "Runic" + DARK_GRAY + "Afterlife" + GRAY + " > " + GRAY),
+		BORDERLANDS(DARK_RED + "Border" + DARK_PURPLE + "Lands" + GRAY + " > " + AQUA),
+		FAITH(LIGHT_PURPLE + "RunicFaith" + GRAY + " > " + GRAY),
+		CASINO(GOLD + "RunicCasino" + GRAY + " > " + GRAY),
+		RANKS(GREEN + "RunicRanks" + GRAY + " > " + GRAY),
+		EXPLORER(YELLOW + "ExplorersLeague" + GRAY + " > " + GRAY),
+		EMPTY(GRAY + ""),
+		SYSTEM(DARK_AQUA + "RunicEngine" + GRAY + " > " + GRAY),
+		RAFFLE(LIGHT_PURPLE + "Runic" + YELLOW + "Raffle" + GRAY + " > "
+				+ GRAY),
+		HELP(BLUE + "Runic" + AQUA + "Help" + GRAY + " > " + GRAY),
+		ERROR(DARK_RED + "Error" + RED + " > " + GRAY),
+		JUSTICE(YELLOW + "Runic" + GOLD + "Justice" + GRAY + " > " + GRAY);
 		private String text;
 
-		private RunicFormat(String txt) {
+		RunicFormat(String txt) {
 			this.text = txt;
 		}
 	}
 
 	public static void sendMessage(Player p, RunicFormat format, String msg) {
-
 		p.sendMessage(format.text + msg);
-
 	}
 
+	private final static ChatColor[] COLORS = new ChatColor[] {
+		BLACK, DARK_BLUE, DARK_GREEN, DARK_AQUA, DARK_RED, DARK_PURPLE, GOLD,
+			GRAY, DARK_GRAY, BLUE, GREEN, AQUA, RED, LIGHT_PURPLE, YELLOW, WHITE
+	};
+
 	public static ChatColor getRandomColor() {
-		Random rand = new Random();
-
-		int n = rand.nextInt(14) + 1;
-		// 50 is the maximum and the 1 is our minimum
-
-		switch (n) {
-		case 1:
-			return ChatColor.AQUA;
-		case 2:
-			return ChatColor.BLUE;
-		case 3:
-			return ChatColor.DARK_AQUA;
-		case 4:
-			return ChatColor.DARK_BLUE;
-		case 5:
-			return ChatColor.DARK_GRAY;
-		case 6:
-			return ChatColor.DARK_GREEN;
-		case 7:
-			return ChatColor.DARK_PURPLE;
-		case 8:
-			return ChatColor.DARK_RED;
-		case 9:
-			return ChatColor.GOLD;
-		case 10:
-			return ChatColor.GRAY;
-		case 11:
-			return ChatColor.GREEN;
-		case 12:
-			return ChatColor.LIGHT_PURPLE;
-		case 13:
-			return ChatColor.RED;
-		case 14:
-			return ChatColor.YELLOW;
-		default:
-			break;
-
-		}
-
-		return ChatColor.WHITE;
+		return COLORS[ThreadLocalRandom.current().nextInt(COLORS.length)];
 	}
 
 	public static void setAnnouncement(Player p, int i, String text) {
@@ -136,14 +88,13 @@ public class RunicMessaging {
 			announceConfig.save(announceFile);
 
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-					"sc " + p.getDisplayName() + ChatColor.AQUA + " updated announcement " + i + ChatColor.AQUA
-							+ " to: " + ChatColor.translateAlternateColorCodes('&', text));
+					"sc " + p.getDisplayName() + AQUA + " updated announcement " + i + AQUA
+							+ " to: " + translateAlternateColorCodes('&', text));
 		} catch (IOException e) {
 			e.printStackTrace();
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
 					"sc Couldn't update announcement" + i + " to " + text + " because... " + e.getMessage());
 		}
-
 	}
 
 	public static void toggleAnnouncement(Player p, int i) {
@@ -186,13 +137,12 @@ public class RunicMessaging {
 			RunicMessaging.sendMessage(p, RunicFormat.SYSTEM, "Toggled announcement " + i);
 
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-					"sc " + p.getDisplayName() + ChatColor.AQUA + " toggled announcement " + i);
+					"sc " + p.getDisplayName() + AQUA + " toggled announcement " + i);
 		} catch (IOException e) {
 			e.printStackTrace();
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
 					"sc Couldn't toggle announcement" + i + " to " + newStatus + " because... " + e.getMessage());
 		}
-
 	}
 
 	public static void setAnnouncementDelay(Player p, int x) {
@@ -200,7 +150,7 @@ public class RunicMessaging {
 		if (!(x > 0 && x < 60)) {
 			// Invalid delay! Cancel!
 			RunicMessaging.sendMessage(p, RunicFormat.SYSTEM,
-					ChatColor.DARK_RED + "Announcement delay not changed. Invalid number given. (Must be 1 - 59)");
+					DARK_RED + "Announcement delay not changed. Invalid number given. (Must be 1 - 59)");
 			return;
 		}
 
@@ -223,7 +173,7 @@ public class RunicMessaging {
 			announceConfig.save(announceFile);
 
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-					"sc " + p.getDisplayName() + ChatColor.AQUA + " changed announcement delay");
+					"sc " + p.getDisplayName() + AQUA + " changed announcement delay");
 		} catch (IOException e) {
 			e.printStackTrace();
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
@@ -231,11 +181,9 @@ public class RunicMessaging {
 		}
 
 		initializeAnnouncements(RunicUniverse.getInstance());
-
 	}
 
 	public static void listAnnouncements(Player p) {
-
 		File announceFile = new File(
 				Bukkit.getServer().getPluginManager().getPlugin("RunicUniverse").getDataFolder().getAbsolutePath(),
 				"announcements.yml");
@@ -245,22 +193,20 @@ public class RunicMessaging {
 		int count = 1;
 		ChatColor statusColor;
 
-		p.sendMessage(ChatColor.DARK_PURPLE + "RunicAnnouncer" + ChatColor.GRAY + ">"
+		p.sendMessage(DARK_PURPLE + "RunicAnnouncer" + GRAY + ">"
 				+ " Listing messages. Number color = on/off.");
 
-		p.sendMessage(ChatColor.DARK_GRAY + "Current message delay: " + ChatColor.GRAY
+		p.sendMessage(DARK_GRAY + "Current message delay: " + GRAY
 				+ announceConfig.getString("General.MinutesBetweenMessages"));
 
 		while (count < 10) {
-
 			if (announceConfig.get("Message" + count + ".Status").equals("Enabled")) {
-				statusColor = ChatColor.DARK_GREEN;
+				statusColor = DARK_GREEN;
 			} else {
-				statusColor = ChatColor.DARK_RED;
+				statusColor = DARK_RED;
 			}
 
-			p.sendMessage(ChatColor.DARK_GRAY + "[" + statusColor + count + ChatColor.DARK_GRAY + "] " + ChatColor
-					.translateAlternateColorCodes('&', announceConfig.get("Message" + count + ".Text").toString()));
+			p.sendMessage(DARK_GRAY + "[" + statusColor + count + DARK_GRAY + "] " + translateAlternateColorCodes('&', announceConfig.get("Message" + count + ".Text").toString()));
 			count++;
 
 		}
@@ -269,7 +215,6 @@ public class RunicMessaging {
 
 	@SuppressWarnings("deprecation")
 	public static void initializeAnnouncements(Plugin instance) {
-
 		File announceFile = new File(
 				Bukkit.getServer().getPluginManager().getPlugin("RunicUniverse").getDataFolder().getAbsolutePath(),
 				"announcements.yml");
@@ -287,19 +232,12 @@ public class RunicMessaging {
 				long delayLong = 20 * 60 * delayMins;
 				int taskID;
 
-				int countValidMessages = 0;
-
 				// Before starting a new repeating task, let's kill any existing
 				// one
 				cancelRepeatingTask();
 
 				BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
-				taskID = scheduler.scheduleAsyncRepeatingTask(instance, new Runnable() {
-					@Override
-					public void run() {
-						RunicMessaging.playAnnouncement();
-					}
-				}, 0L, delayLong);
+				taskID = scheduler.scheduleAsyncRepeatingTask(instance, RunicMessaging::playAnnouncement, 0L, delayLong);
 
 				AnnTask = taskID;
 
@@ -366,13 +304,10 @@ public class RunicMessaging {
 				Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
 						"sc Couldn't create the announcements file ... " + e.getMessage());
 			}
-
 		}
-
 	}
 
 	public static void playAnnouncement() {
-
 		File announceFile = new File(
 				Bukkit.getServer().getPluginManager().getPlugin("RunicUniverse").getDataFolder().getAbsolutePath(),
 				"announcements.yml");
@@ -418,10 +353,10 @@ public class RunicMessaging {
 
 				for (Player p : Bukkit.getOnlinePlayers()) {
 
-					p.sendMessage(ChatColor.DARK_GRAY + "*** " + ChatColor.RESET
-							+ ChatColor.translateAlternateColorCodes('&',
+					p.sendMessage(DARK_GRAY + "*** " + RESET
+							+ translateAlternateColorCodes('&',
 									announceConfig.getString("Message" + getNextMsg + ".Text"))
-							+ ChatColor.DARK_GRAY + " ***");
+							+ DARK_GRAY + " ***");
 				}
 
 			} catch (IOException e) {
@@ -434,7 +369,6 @@ public class RunicMessaging {
 	}
 
 	public static void cancelRepeatingTask() {
-
 		if (AnnTask != 0) {
 			// if AnnTask=0, it suggests that the repeating task never
 			// successfully registered its ID ... and thus it should not be
