@@ -15,9 +15,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 public class RunicUtilities {
-
 	public static Boolean isInteger(String x) {
-
 		if (x == null) {
 			return false;
 		}
@@ -28,7 +26,6 @@ public class RunicUtilities {
 		} catch (NumberFormatException e) {
 			return false;
 		}
-
 	}
 
 	public static void fixGroupManager() {
@@ -73,7 +70,6 @@ public class RunicUtilities {
 				Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
 						"sc Found " + ChatColor.GOLD + "OK" + ChatColor.AQUA + " record for " + p.getDisplayName());
 			}
-
 		}
 
 		try {
@@ -81,14 +77,9 @@ public class RunicUtilities {
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "sc Saving cleanup changes back to file...");
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "sc Reloading permissions on server...");
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "manload RunicRealm");
-
 		} catch (IOException e) {
 			e.printStackTrace();
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "sc Failed to save changes!");
 		}
-
 	}
-
-
-
 }

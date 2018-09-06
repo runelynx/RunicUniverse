@@ -69,13 +69,10 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 		getCommand("staffrank").setExecutor(new Commands());
 		getCommand("censor").setExecutor(new Commands());
 		getCommand("runicholo").setExecutor(new Commands());
-		getCommand("news").setExecutor(new Commands());
 		getCommand("evacuate").setExecutor(new Commands());
 
 		ChatCensor.censoredWords.clear();
-		for (String bws : ChatCensor.listBadWordsFromYML()) {
-			ChatCensor.censoredWords.add(bws);
-		}
+		ChatCensor.censoredWords.addAll(ChatCensor.listBadWordsFromYML());
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			p.sendMessage(ChatColor.DARK_GRAY + "Connection to Runic Universe " + ChatColor.GREEN + "established"
@@ -98,8 +95,7 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 			msgout.writeUTF(SERVER_NAME); // You can do anything
 			// msgout
 			msgout.writeShort(123);
-		} catch (IOException e) {
-		}
+		} catch (IOException ignored) {}
 
 		out.writeShort(msgbytes.toByteArray().length);
 		out.write(msgbytes.toByteArray());
@@ -109,9 +105,8 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 		// null);
 		// Else, specify them
 
-		List<Player> list = new ArrayList<Player>();
-		list.addAll(Bukkit.getServer().getOnlinePlayers());
-		Boolean runOnce = false;
+		List<Player> list = new ArrayList<>(Bukkit.getServer().getOnlinePlayers());
+		boolean runOnce = false;
 
 		if (list.size() != 0) {
 			runOnce = true;
@@ -126,7 +121,6 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 
 	@Override
 	public void onDisable() {
-
 		try {
 			this.setEnabled(true);
 
@@ -161,8 +155,7 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 					out.toByteArray());
 
 			this.setEnabled(false);
-		} catch (Exception ex) {
-		}
+		} catch (Exception ignored) {}
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			p.sendMessage(ChatColor.DARK_GRAY + "Connection to Runic Universe " + ChatColor.RED + "broken"
@@ -534,94 +527,91 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 
 		// Save online players to DB every minute
 		BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
-		scheduler.runTaskTimerAsynchronously(this, new Runnable() {
-			@Override
-			public void run() {
-				Connection z = MySQL.openConnection();
-				ArrayList<UUID> PlayerIDs = new ArrayList<UUID>();
-				for (Player all : getServer().getOnlinePlayers()) {
-					PlayerIDs.add(all.getUniqueId());
-				}
+		scheduler.runTaskTimerAsynchronously(this, () -> {
+			Connection z = MySQL.openConnection();
+			List<UUID> PlayerIDs = new ArrayList<>();
+			for (Player all : getServer().getOnlinePlayers()) {
+				PlayerIDs.add(all.getUniqueId());
+			}
 
-				try {
-					// clear the table
-					Statement insertStmt = z.createStatement();
-					insertStmt.executeUpdate("DELETE FROM rp_PlayersOnline WHERE Server = '"
-							+ instance.getConfig().getString("ServerName") + "';");
-				} catch (SQLException e) {
-					getLogger().log(Level.SEVERE, "Could not reset PlayersOnline table! because: " + e.getMessage());
-				}
+			try {
+				// clear the table
+				Statement insertStmt = z.createStatement();
+				insertStmt.executeUpdate("DELETE FROM rp_PlayersOnline WHERE Server = '"
+						+ instance.getConfig().getString("ServerName") + "';");
+			} catch (SQLException e) {
+				getLogger().log(Level.SEVERE, "Could not reset PlayersOnline table! because: " + e.getMessage());
+			}
 
-				// Clear the table
-				Date date = new Date();
+			// Clear the table
+			Date date = new Date();
 
-				for (UUID uuid : PlayerIDs) {
-					if (Bukkit.getPlayer(uuid).hasPermission("rp.admin")) {
-						try {
-							Statement insertStmt = z.createStatement();
-							insertStmt.executeUpdate(
-									"INSERT INTO rp_PlayersOnline (`PlayerName`, `UUID`, `Staff`, `Type`, `Timestamp`, `Server`) VALUES ('"
-											+ Bukkit.getPlayer(uuid).getName() + "', '" + uuid + "', '1', 'Admin', '"
-											+ date.getTime() + "', '" + instance.getConfig().getString("ServerName")
-											+ "');");
+			for (UUID uuid : PlayerIDs) {
+				if (Bukkit.getPlayer(uuid).hasPermission("rp.admin")) {
+					try {
+						Statement insertStmt = z.createStatement();
+						insertStmt.executeUpdate(
+								"INSERT INTO rp_PlayersOnline (`PlayerName`, `UUID`, `Staff`, `Type`, `Timestamp`, `Server`) VALUES ('"
+										+ Bukkit.getPlayer(uuid).getName() + "', '" + uuid + "', '1', 'Admin', '"
+										+ date.getTime() + "', '" + instance.getConfig().getString("ServerName")
+										+ "');");
 
-						} catch (SQLException e) {
-							getLogger().log(Level.SEVERE,
-									"Could not update PlayersOnline ADMIN! because: " + e.getMessage());
-						}
+					} catch (SQLException e) {
+						getLogger().log(Level.SEVERE,
+								"Could not update PlayersOnline ADMIN! because: " + e.getMessage());
+					}
 
-					} else if (getServer().getPlayer(uuid).hasPermission("rp.mod")) {
-						try {
-							Statement insertStmt = z.createStatement();
-							insertStmt.executeUpdate(
-									"INSERT INTO rp_PlayersOnline (`PlayerName`, `UUID`, `Staff`, `Type`, `Timestamp`, `Server`) VALUES ('"
-											+ Bukkit.getPlayer(uuid).getName() + "', '" + uuid.toString()
-											+ "', '1', 'Mod', '" + date.getTime() + "', '"
-											+ instance.getConfig().getString("ServerName") + "');");
+				} else if (getServer().getPlayer(uuid).hasPermission("rp.mod")) {
+					try {
+						Statement insertStmt = z.createStatement();
+						insertStmt.executeUpdate(
+								"INSERT INTO rp_PlayersOnline (`PlayerName`, `UUID`, `Staff`, `Type`, `Timestamp`, `Server`) VALUES ('"
+										+ Bukkit.getPlayer(uuid).getName() + "', '" + uuid.toString()
+										+ "', '1', 'Mod', '" + date.getTime() + "', '"
+										+ instance.getConfig().getString("ServerName") + "');");
 
-						} catch (SQLException e) {
-							getLogger().log(Level.SEVERE,
-									"Could not update PlayersOnline MOD! because: " + e.getMessage());
-						}
+					} catch (SQLException e) {
+						getLogger().log(Level.SEVERE,
+								"Could not update PlayersOnline MOD! because: " + e.getMessage());
+					}
 
-					} else if (getServer().getPlayer(uuid).hasPermission("rp.staff.helper")) {
-						try {
-							Statement insertStmt = z.createStatement();
-							insertStmt.executeUpdate(
-									"INSERT INTO rp_PlayersOnline (`PlayerName`, `UUID`, `Staff`, `Type`, `Timestamp`, `Server`) VALUES ('"
-											+ Bukkit.getPlayer(uuid).getName() + "', '" + uuid.toString()
-											+ "', '1', 'Helper', '" + date.getTime() + "', '"
-											+ instance.getConfig().getString("ServerName") + "');");
+				} else if (getServer().getPlayer(uuid).hasPermission("rp.staff.helper")) {
+					try {
+						Statement insertStmt = z.createStatement();
+						insertStmt.executeUpdate(
+								"INSERT INTO rp_PlayersOnline (`PlayerName`, `UUID`, `Staff`, `Type`, `Timestamp`, `Server`) VALUES ('"
+										+ Bukkit.getPlayer(uuid).getName() + "', '" + uuid.toString()
+										+ "', '1', 'Helper', '" + date.getTime() + "', '"
+										+ instance.getConfig().getString("ServerName") + "');");
 
-						} catch (SQLException e) {
-							getLogger().log(Level.SEVERE, "Could not update PlayersOnline  because: " + e.getMessage());
-						}
+					} catch (SQLException e) {
+						getLogger().log(Level.SEVERE, "Could not update PlayersOnline  because: " + e.getMessage());
+					}
 
-					} else {
-						try {
-							Statement insertStmt = z.createStatement();
-							insertStmt.executeUpdate(
-									"INSERT INTO rp_PlayersOnline (`PlayerName`, `UUID`, `Staff`, `Type`, `Timestamp`, `Server`) VALUES ('"
-											+ Bukkit.getPlayer(uuid).getName() + "', '" + uuid.toString()
-											+ "', '0', 'None', '" + date.getTime() + "', '"
-											+ instance.getConfig().getString("ServerName") + "');");
+				} else {
+					try {
+						Statement insertStmt = z.createStatement();
+						insertStmt.executeUpdate(
+								"INSERT INTO rp_PlayersOnline (`PlayerName`, `UUID`, `Staff`, `Type`, `Timestamp`, `Server`) VALUES ('"
+										+ Bukkit.getPlayer(uuid).getName() + "', '" + uuid.toString()
+										+ "', '0', 'None', '" + date.getTime() + "', '"
+										+ instance.getConfig().getString("ServerName") + "');");
 
-						} catch (SQLException e) {
-							getLogger().log(Level.SEVERE,
-									"Could not update PlayersOnline nonstaff! because: " + e.getMessage());
-						}
-
+					} catch (SQLException e) {
+						getLogger().log(Level.SEVERE,
+								"Could not update PlayersOnline nonstaff! because: " + e.getMessage());
 					}
 
 				}
 
-				try {
+			}
 
-					z.close();
-				} catch (SQLException e) {
-					getLogger().log(Level.SEVERE,
-							"Could not update close PlayersOnline update  conn! because: " + e.getMessage());
-				}
+			try {
+
+				z.close();
+			} catch (SQLException e) {
+				getLogger().log(Level.SEVERE,
+						"Could not update close PlayersOnline update  conn! because: " + e.getMessage());
 			}
 		}, 0L, 1200L);
 
