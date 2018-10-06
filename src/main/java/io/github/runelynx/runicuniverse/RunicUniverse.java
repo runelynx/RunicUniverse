@@ -180,7 +180,6 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 		String subChannel = in.readUTF();
 		short len;
 		byte[] msgbytes;
-		String msgFromBungee;
 
 		// Process messaging from BUNGEE directly here. Messaging from SPIGOTS
 		// is further down!
@@ -234,7 +233,7 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Bukkit.getLogger().log(Level.INFO, "RunicUniverse: PluginMessageRecvd hit an NPE. Channel: " + channel + ". Subchannel: " + subChannel);
 		} // Read the data in the same way you wrote it
 
 	}
