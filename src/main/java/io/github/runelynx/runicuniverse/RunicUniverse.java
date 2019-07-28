@@ -183,7 +183,7 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 
 		// Process messaging from BUNGEE directly here. Messaging from SPIGOTS
 		// is further down!
-		if (subChannel.equals("BungeePromoterSubchannel") || subChannel.equals("PlayerList")) {
+		if (subChannel.equals("BungeePromoterSubchannel") || subChannel.equals("PlayerList") || subChannel.equals("ServerIP")) {
 			return;
 		}
 
