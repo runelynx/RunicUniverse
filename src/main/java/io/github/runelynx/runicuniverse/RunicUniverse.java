@@ -359,35 +359,35 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 		meta.setLore(treeLore);
 		tree.setItemMeta(meta);
 
-		ItemStack flower1 = new ItemStack(Material.ROSE_RED, 1);
+		ItemStack flower1 = new ItemStack(Material.ROSE_BUSH, 1);
 		meta = flower1.getItemMeta();
-		meta.setDisplayName("");
+		meta.setDisplayName("Astrid World Transport");
 		flower1.setItemMeta(meta);
-		ItemStack flower2 = new ItemStack(Material.ROSE_RED, 1);
+		ItemStack flower2 = new ItemStack(Material.ROSE_BUSH, 1);
 		meta = flower2.getItemMeta();
 		meta.setDisplayName("");
 		flower2.setItemMeta(meta);
-		ItemStack flower3 = new ItemStack(Material.ROSE_RED, 1);
+		ItemStack flower3 = new ItemStack(Material.ROSE_BUSH, 1);
 		meta = flower3.getItemMeta();
 		meta.setDisplayName("");
 		flower3.setItemMeta(meta);
-		ItemStack flower4 = new ItemStack(Material.ROSE_RED, 1);
+		ItemStack flower4 = new ItemStack(Material.ROSE_BUSH, 1);
 		meta = flower4.getItemMeta();
 		meta.setDisplayName("");
 		flower4.setItemMeta(meta);
-		ItemStack flower5 = new ItemStack(Material.ROSE_RED, 1);
+		ItemStack flower5 = new ItemStack(Material.ROSE_BUSH, 1);
 		meta = flower5.getItemMeta();
 		meta.setDisplayName("");
 		flower5.setItemMeta(meta);
-		ItemStack flower6 = new ItemStack(Material.ROSE_RED, 1);
+		ItemStack flower6 = new ItemStack(Material.ROSE_BUSH, 1);
 		meta = flower6.getItemMeta();
 		meta.setDisplayName("");
 		flower6.setItemMeta(meta);
-		ItemStack flower7 = new ItemStack(Material.ROSE_RED, 1);
+		ItemStack flower7 = new ItemStack(Material.ROSE_BUSH, 1);
 		meta = flower7.getItemMeta();
 		meta.setDisplayName("");
 		flower7.setItemMeta(meta);
-		ItemStack flower8 = new ItemStack(Material.ROSE_RED, 1);
+		ItemStack flower8 = new ItemStack(Material.ROSE_BUSH, 1);
 		meta = flower8.getItemMeta();
 		meta.setDisplayName("");
 		flower8.setItemMeta(meta);
@@ -477,7 +477,7 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 	@EventHandler
 	public void onInventoryClick(InventoryClickEvent event) {
 
-		if (event.getInventory().getTitle().contains("Astrid World Transport")) {
+		if (event.getInventory().getItem(0).getItemMeta().getDisplayName().contains("Astrid World Transport")) {
 
 			// Survival
 			if (event.getSlot() == 19 && !SERVER_NAME.equals("Survival")) {
