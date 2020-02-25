@@ -477,7 +477,7 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 	@EventHandler
 	public void onInventoryClick(InventoryClickEvent event) {
 
-		if (event.getInventory().getItem(0).getItemMeta().getDisplayName().contains("Astrid World Transport")) {
+		if (event.getView().getTitle().contains("Astrid World Transport")) {
 
 			// Survival
 			if (event.getSlot() == 19 && !SERVER_NAME.equals("Survival")) {
