@@ -269,7 +269,7 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 		event.getPlayer().sendPluginMessage(instance, "BungeeCord", out.toByteArray());
 	}
 
-	/** Hub pressure plates that send the player straight to a server: "x,y,z" in the Hub's "world" -> Bungee server. */
+	/** Hub server pressure plates (open the Astrid travel menu): "x,y,z" in the Hub's "world" -> Bungee server. */
 	private static final Map<String, String> HUB_SERVER_PLATES = new HashMap<String, String>();
 	static {
 		HUB_SERVER_PLATES.put("1824,55,404", "Creative");
@@ -303,8 +303,7 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 			p.sendMessage("Astrid rejects your request!");
 			return;
 		}
-		p.sendMessage(ChatColor.DARK_AQUA + "" + ChatColor.ITALIC + "Astrid sends you to " + server + "...");
-		sendPlayerToServer(server, p);
+		showHubAstridTravelMenu(p);
 	}
 
 	@EventHandler
