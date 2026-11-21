@@ -183,9 +183,10 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 
 		// Process messaging from BUNGEE directly here. Messaging from SPIGOTS
 		// is further down!
-		if (subChannel.equals("BungeePromoterSubchannel") || subChannel.equals("PlayerList") || subChannel.equals("ServerIP") ||
-				subChannel.equals("CMIPlayerInfoReqChannel") || subChannel.equals("GetServers")) {
-
+		// Only handle the forwarded sub-channels this plugin sends itself. Replies to other plugins' Bungee requests
+		// (GetServer, PlayerList, ServerIP, CMI, BungeeTabListPlus...) arrive here too and have a different format.
+		if (!(subChannel.equals("Chat") || subChannel.equals("ServerConn") || subChannel.equals("ServerDisconn")
+				|| subChannel.equals("NewPlayer") || subChannel.equals("PlayerReady") || subChannel.equals("Seeker"))) {
 			return;
 		}
 
@@ -266,6 +267,44 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 		out.write(msgbytes.toByteArray());
 
 		event.getPlayer().sendPluginMessage(instance, "BungeeCord", out.toByteArray());
+	}
+
+	/** Hub pressure plates that send the player straight to a server: "x,y,z" in the Hub's "world" -> Bungee server. */
+	private static final Map<String, String> HUB_SERVER_PLATES = new HashMap<String, String>();
+	static {
+		HUB_SERVER_PLATES.put("1824,55,404", "Creative");
+		HUB_SERVER_PLATES.put("1787,16,345", "Survival");
+		HUB_SERVER_PLATES.put("1880,97,378", "Skyblock");
+	}
+	private final Map<UUID, Long> plateCooldown = new HashMap<UUID, Long>();
+
+	@EventHandler
+	public void onHubServerPlate(org.bukkit.event.player.PlayerInteractEvent event) {
+		if (event.getAction() != org.bukkit.event.block.Action.PHYSICAL || event.getClickedBlock() == null
+				|| !"Hub".equals(SERVER_NAME)) {
+			return;
+		}
+		org.bukkit.block.Block b = event.getClickedBlock();
+		if (!b.getWorld().getName().equalsIgnoreCase("world")) {
+			return;
+		}
+		String server = HUB_SERVER_PLATES.get(b.getX() + "," + b.getY() + "," + b.getZ());
+		if (server == null) {
+			return;
+		}
+		Player p = event.getPlayer();
+		long now = System.currentTimeMillis();
+		Long last = plateCooldown.get(p.getUniqueId());
+		if (last != null && now - last < 3000) {
+			return;
+		}
+		plateCooldown.put(p.getUniqueId(), now);
+		if (!p.hasPermission("ru.travel")) {
+			p.sendMessage("Astrid rejects your request!");
+			return;
+		}
+		p.sendMessage(ChatColor.DARK_AQUA + "" + ChatColor.ITALIC + "Astrid sends you to " + server + "...");
+		sendPlayerToServer(server, p);
 	}
 
 	@EventHandler
