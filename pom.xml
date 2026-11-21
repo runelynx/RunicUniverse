@@ -9,13 +9,14 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.release>8</maven.compiler.release>
+		<!-- Paper 26.x requires Java 25 -->
+		<maven.compiler.release>25</maven.compiler.release>
 	</properties>
 
 	<repositories>
 		<repository>
-			<id>spigot-repo</id>
-			<url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+			<id>papermc</id>
+			<url>https://repo.papermc.io/repository/maven-public/</url>
 		</repository>
 		<repository>
 			<id>jitpack.io</id>
@@ -25,9 +26,9 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.spigotmc</groupId>
-			<artifactId>spigot-api</artifactId>
-			<version>1.15.2-R0.1-SNAPSHOT</version>
+			<groupId>io.papermc.paper</groupId>
+			<artifactId>paper-api</artifactId>
+			<version>26.3.build.257-stable</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -35,6 +36,13 @@
 			<artifactId>VaultAPI</artifactId>
 			<version>1.7</version>
 			<scope>provided</scope>
+			<exclusions>
+				<!-- VaultAPI drags in an old Bukkit API that would shadow paper-api -->
+				<exclusion>
+					<groupId>org.bukkit</groupId>
+					<artifactId>bukkit</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 
