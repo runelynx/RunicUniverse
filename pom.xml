@@ -9,9 +9,20 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<!-- Paper 26.x requires Java 25 -->
+		<!-- Paper 26.x requires Java 25 (Hub/Creative/Skyblock). Survival stays on Paper 1.20.2 / Java 17: build with -Psurvival -->
 		<maven.compiler.release>25</maven.compiler.release>
+		<paper.api.version>26.3.build.257-stable</paper.api.version>
 	</properties>
+
+	<profiles>
+		<profile>
+			<id>survival</id>
+			<properties>
+				<maven.compiler.release>17</maven.compiler.release>
+				<paper.api.version>1.20.2-R0.1-SNAPSHOT</paper.api.version>
+			</properties>
+		</profile>
+	</profiles>
 
 	<repositories>
 		<repository>
@@ -28,7 +39,7 @@
 		<dependency>
 			<groupId>io.papermc.paper</groupId>
 			<artifactId>paper-api</artifactId>
-			<version>26.3.build.257-stable</version>
+			<version>${paper.api.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
