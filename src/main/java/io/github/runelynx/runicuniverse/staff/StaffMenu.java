@@ -91,20 +91,60 @@ public final class StaffMenu {
 				String afterPlayer = a.usage.replaceFirst("^\\S+\\s*", "");
 				if (afterPlayer.isEmpty()) {
 					p.closeInventory();
-					Rs.run(p, a, new String[] { target.getName() });
+					runFromMenu(p, a, new String[] { target.getName() });
 				} else {
-					p.closeInventory();
-					fillIn(p, "/rs " + a.name + " " + target.getName() + " ", afterPlayer);
+					pickChoice(p, a, target.getName(), afterPlayer);
 				}
 			}, () -> area(p, a.area));
 			return;
 		}
 		p.closeInventory();
 		if (a.usage.isEmpty()) {
-			Rs.run(p, a, new String[0]);
+			runFromMenu(p, a, new String[0]);
 		} else {
 			fillIn(p, "/rs " + a.name + " ", a.usage);
 		}
+	}
+
+	/** Run an action on behalf of a menu click: its confirmations use the Yes / No menu instead of chat. */
+	static void runFromMenu(Player p, StaffAction a, String[] args) {
+		Confirm.fromMenu = true;
+		try {
+			Rs.run(p, a, args);
+		} finally {
+			Confirm.fromMenu = false;
+		}
+	}
+
+	/**
+	 * Second step after picking a player: the action's own tab-completion choices for the next argument as icons
+	 * (souls amounts, weapon codes, colours, staff ranks...), plus "Other..." to type a value in chat.
+	 */
+	static void pickChoice(Player p, StaffAction a, String target, String stillNeeded) {
+		List<String> options = a.tab(p, new String[] { target, "" });
+		boolean lastArg = !stillNeeded.trim().contains(" ");
+		if (options.isEmpty() || !lastArg) {
+			p.closeInventory();
+			fillIn(p, "/rs " + a.name + " " + target + " ", stillNeeded);
+			return;
+		}
+		int shown = Math.min(options.size(), 27);
+		int rows = Math.min(6, 2 + (shown + 1 + 8) / 9);
+		Gui g = new Gui(rows, "&8" + a.name + " " + target + ": " + stillNeeded.replaceAll("[<>\\[\\]]", ""));
+		int slot = 0;
+		for (String opt : options.subList(0, shown)) {
+			g.set(slot++, Gui.item(a.icon, "&b" + opt, "&7/rs " + a.name + " " + target + " " + opt, "&eClick to choose"), (pl, t) -> {
+				pl.closeInventory();
+				runFromMenu(pl, a, new String[] { target, opt });
+			});
+		}
+		g.set(slot, Gui.item("OAK_SIGN", "&fOther…", "&7Type your own value in chat"), (pl, t) -> {
+			pl.closeInventory();
+			fillIn(pl, "/rs " + a.name + " " + target + " ", stillNeeded);
+		});
+		g.set((rows - 1) * 9, Gui.item("ARROW", "&7« Back"), (pl, t) -> click(pl, a));
+		g.frameRow(rows - 1);
+		g.openLater(p);
 	}
 
 	/** Chat line with a button that puts the command into the chat box. */

@@ -8,9 +8,9 @@ import org.bukkit.entity.Player;
 import java.util.*;
 
 /**
- * Confirmations for anything destructive or large. From chat: a line with clickable [Confirm] / [Cancel].
- * From a menu: a small Yes / No menu. Console senders are trusted and run straight away.
- * Requests expire after 60 seconds and can only be confirmed by the person who started them.
+ * Confirmations for anything destructive or large. Typed commands get a chat line with clickable [Confirm] / [Cancel];
+ * anything started from the staff menu gets a Yes / No menu instead. Console senders are trusted and run straight away.
+ * Every confirmed action answers "✔ Done: ...". Requests expire after 60 seconds and only their starter can confirm.
  */
 public final class Confirm {
 
@@ -24,11 +24,23 @@ public final class Confirm {
 	}
 
 	private static final Map<String, Pending> PENDING = new HashMap<>();
+	/** Recently finished ids, so a second click says "already done" rather than "expired". */
+	private static final Map<String, String> DONE = new LinkedHashMap<>() {
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<String, String> e) { return size() > 200; }
+	};
 
-	/** Ask in chat. */
+	/** True while an action runs because of a staff-menu click (set by StaffMenu), so ask() uses the Yes / No menu. */
+	static boolean fromMenu = false;
+
+	/** Ask in chat, or with the Yes / No menu when the request came from the staff menu. */
 	public static void ask(CommandSender sender, String what, Runnable action) {
 		if (!(sender instanceof Player p)) {
 			action.run();
+			return;
+		}
+		if (fromMenu) {
+			menu(p, what, null, action, null);
 			return;
 		}
 		purge();
@@ -42,7 +54,7 @@ public final class Confirm {
 				.append(Component.text("   (expires in 60s)", NamedTextColor.DARK_GRAY)));
 	}
 
-	/** Ask with a Yes / No menu (used when the request came from a menu). */
+	/** Ask with a Yes / No menu. */
 	public static void menu(Player p, String what, List<String> details, Runnable action, Runnable back) {
 		Gui g = new Gui(3, "&8Confirm: &0" + (what.length() > 24 ? what.substring(0, 24) + "…" : what));
 		List<String> lore = new ArrayList<>();
@@ -53,29 +65,49 @@ public final class Confirm {
 		g.set(4, Gui.item("PAPER", "&f" + what, lore), null);
 		g.set(11, Gui.item("LIME_CONCRETE", "&a&l✔ Yes, do it", "&7" + what), (pl, t) -> {
 			pl.closeInventory();
-			action.run();
+			runAndReport(pl, what, action);
 		});
 		g.set(15, Gui.item("RED_CONCRETE", "&c&l✘ No, go back"), (pl, t) -> {
 			if (back != null) {
 				back.run();
 			} else {
 				pl.closeInventory();
+				Ui.info(pl, "Cancelled: " + what);
 			}
 		});
 		g.frameRow(0).frameRow(1).frameRow(2);
 		g.openLater(p);
 	}
 
+	private static void runAndReport(CommandSender s, String what, Runnable action) {
+		boolean was = fromMenu;
+		fromMenu = false; // anything the action asks for itself goes to chat
+		try {
+			action.run();
+			Ui.ok(s, "✔ Done: " + what);
+		} catch (RuntimeException e) {
+			Ui.error(s, "That failed: " + e.getMessage());
+		} finally {
+			fromMenu = was;
+		}
+	}
+
 	static void handle(CommandSender sender, String id, boolean yes) {
 		purge();
 		Pending pd = PENDING.get(id);
 		if (pd == null || !(sender instanceof Player p) || !p.getUniqueId().equals(pd.who)) {
-			Ui.error(sender, "That confirmation has expired or isn't yours.");
+			String done = DONE.get(id);
+			if (done != null) {
+				Ui.info(sender, "Already handled: " + done);
+			} else {
+				Ui.error(sender, "That confirmation has expired or isn't yours.");
+			}
 			return;
 		}
 		PENDING.remove(id);
+		DONE.put(id, pd.what);
 		if (yes) {
-			pd.action.run();
+			runAndReport(sender, pd.what, pd.action);
 		} else {
 			Ui.info(sender, "Cancelled: " + pd.what);
 		}
