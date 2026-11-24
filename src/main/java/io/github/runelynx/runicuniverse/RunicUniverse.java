@@ -71,6 +71,13 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 		getCommand("runicholo").setExecutor(new Commands());
 		getCommand("evacuate").setExecutor(new Commands());
 
+		// /rs - Runic Staff (2026-11-24): one staff command + menu on every server. Other Runic plugins add their own actions.
+		io.github.runelynx.runicuniverse.staff.Rs rs = new io.github.runelynx.runicuniverse.staff.Rs();
+		getCommand("rs").setExecutor(rs);
+		getCommand("rs").setTabCompleter(rs);
+		io.github.runelynx.runicuniverse.staff.Gui.init(this);
+		io.github.runelynx.runicuniverse.staff.CoreActions.register();
+
 		ChatCensor.censoredWords.clear();
 		ChatCensor.censoredWords.addAll(ChatCensor.listBadWordsFromYML());
 

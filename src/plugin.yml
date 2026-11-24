@@ -41,3 +41,8 @@ commands:
       usage: "/<command> playername staffrank/none"
       permission: ru.staffpromotion
       permission-message: "You don't have permission: <permission>"
+   rs:
+      description: "Runic Staff - one menu and command for staff tools on every server"
+      usage: /<command> [action] [args]
+      permission: rp.staff
+      permission-message: "Staff only."
