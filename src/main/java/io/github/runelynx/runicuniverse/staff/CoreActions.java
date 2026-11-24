@@ -290,7 +290,8 @@ public final class CoreActions {
 				row(s, "Rank", rank);
 			}
 			row(s, "Game mode", p.getGameMode().name().toLowerCase() + (p.isFlying() ? " (flying)" : ""));
-			row(s, "Health / food", (int) Math.ceil(p.getHealth()) + " / " + p.getFoodLevel() + "   Level " + p.getLevel());
+			s.sendMessage(Component.text("   ").append(fields("Health", (int) Math.ceil(p.getHealth()), "Food", p.getFoodLevel(),
+					"Level", p.getLevel())));
 			row(s, "Ping", p.getPing() + " ms");
 			long hours = p.getStatistic(Statistic.PLAY_ONE_MINUTE) / 20 / 3600;
 			row(s, "Playtime here", hours + " h");
@@ -313,6 +314,20 @@ public final class CoreActions {
 				RunicUniverse.getInstance().getLogger().warning("[rs] player info provider failed: " + e);
 			}
 		}
+	}
+
+	/** "Label: value   Label: value" with grey labels and white values (a Component value keeps its own colour). */
+	public static Component fields(Object... labelValue) {
+		Component c = Component.empty();
+		for (int i = 0; i + 1 < labelValue.length; i += 2) {
+			if (i > 0) {
+				c = c.append(Component.text("   "));
+			}
+			c = c.append(Component.text(labelValue[i] + ": ", NamedTextColor.GRAY));
+			Object v = labelValue[i + 1];
+			c = c.append(v instanceof Component comp ? comp : Component.text(String.valueOf(v), NamedTextColor.WHITE));
+		}
+		return c;
 	}
 
 	public static void row(CommandSender s, String label, String value) {
