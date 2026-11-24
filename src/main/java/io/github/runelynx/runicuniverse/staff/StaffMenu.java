@@ -40,8 +40,28 @@ public final class StaffMenu {
 				}
 			}
 			final String ar = area;
-			g.set(INNER[i++], Gui.item(StaffRegistry.AREAS.get(area), "&e&l" + area, "&7" + count + " tool" + (count == 1 ? "" : "s"),
-					"", "&eClick to open"), (pl, t) -> area(pl, ar));
+			StaffAction only = null;
+			if (count == 1) {
+				for (StaffAction a : StaffRegistry.inArea(area)) {
+					if (a.allowed(p)) {
+						only = a;
+					}
+				}
+			}
+			if (only != null) {
+				// One tool in this area: skip the in-between menu and open the tool itself.
+				final StaffAction single = only;
+				List<String> lore = new ArrayList<>();
+				for (String line : wrap(single.description, 34)) {
+					lore.add("&7" + line);
+				}
+				lore.add("");
+				lore.add("&eClick to open");
+				g.set(INNER[i++], Gui.item(StaffRegistry.AREAS.get(area), "&e&l" + area, lore), (pl, t) -> click(pl, single));
+			} else {
+				g.set(INNER[i++], Gui.item(StaffRegistry.AREAS.get(area), "&e&l" + area, "&7" + count + " tool" + (count == 1 ? "" : "s"),
+						"", "&eClick to open"), (pl, t) -> area(pl, ar));
+			}
 		}
 		g.set(31, Gui.item("BOOK", "&f&lHelp", "&7All /rs commands you can use", "&7here, as clickable chat lines"),
 				(pl, t) -> {
