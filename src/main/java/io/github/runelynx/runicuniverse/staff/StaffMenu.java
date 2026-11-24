@@ -121,26 +121,47 @@ public final class StaffMenu {
 	 * (souls amounts, weapon codes, colours, staff ranks...), plus "Other..." to type a value in chat.
 	 */
 	static void pickChoice(Player p, StaffAction a, String target, String stillNeeded) {
-		List<String> options = a.tab(p, new String[] { target, "" });
-		boolean lastArg = !stillNeeded.trim().contains(" ");
-		if (options.isEmpty() || !lastArg) {
+		pickChoice(p, a, new ArrayList<>(List.of(target)), stillNeeded);
+	}
+
+	/** One menu per remaining argument (e.g. crate, then amount); the last choice runs the action. */
+	static void pickChoice(Player p, StaffAction a, List<String> chosen, String stillNeeded) {
+		String[] parts = stillNeeded.trim().split("\\s+", 2);
+		String argName = parts[0].replaceAll("[<>\\[\\]]", "");
+		String after = parts.length > 1 ? parts[1] : "";
+		String[] probe = new String[chosen.size() + 1];
+		for (int i = 0; i < chosen.size(); i++) probe[i] = chosen.get(i);
+		probe[chosen.size()] = "";
+		List<String> options = a.tab(p, probe);
+		String typed = "/rs " + a.name + " " + String.join(" ", chosen) + " ";
+		if (options.isEmpty()) {
 			p.closeInventory();
-			fillIn(p, "/rs " + a.name + " " + target + " ", stillNeeded);
+			fillIn(p, typed, stillNeeded);
 			return;
 		}
-		int shown = Math.min(options.size(), 27);
+		int shown = Math.min(options.size(), 44);
 		int rows = Math.min(6, 2 + (shown + 1 + 8) / 9);
-		Gui g = new Gui(rows, "&8" + a.name + " " + target + ": " + stillNeeded.replaceAll("[<>\\[\\]]", ""));
+		Gui g = new Gui(rows, "&8" + a.name + ": pick " + argName);
 		int slot = 0;
 		for (String opt : options.subList(0, shown)) {
-			g.set(slot++, Gui.item(a.icon, "&b" + opt, "&7/rs " + a.name + " " + target + " " + opt, "&eClick to choose"), (pl, t) -> {
-				pl.closeInventory();
-				runFromMenu(pl, a, new String[] { target, opt });
+			org.bukkit.inventory.ItemStack icon = a.choiceIcon == null ? null : a.choiceIcon.icon(chosen.size(), opt);
+			if (icon == null) {
+				icon = Gui.item(a.icon, "&b" + opt, "&7" + typed + opt, "&eClick to choose");
+			}
+			g.set(slot++, icon, (pl, t) -> {
+				List<String> next = new ArrayList<>(chosen);
+				next.add(opt);
+				if (after.isEmpty()) {
+					pl.closeInventory();
+					runFromMenu(pl, a, next.toArray(new String[0]));
+				} else {
+					pickChoice(pl, a, next, after);
+				}
 			});
 		}
 		g.set(slot, Gui.item("OAK_SIGN", "&fOther…", "&7Type your own value in chat"), (pl, t) -> {
 			pl.closeInventory();
-			fillIn(pl, "/rs " + a.name + " " + target + " ", stillNeeded);
+			fillIn(pl, typed, stillNeeded);
 		});
 		g.set((rows - 1) * 9, Gui.item("ARROW", "&7« Back"), (pl, t) -> click(pl, a));
 		g.frameRow(rows - 1);

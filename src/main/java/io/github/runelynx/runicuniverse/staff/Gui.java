@@ -35,7 +35,28 @@ public final class Gui implements InventoryHolder {
 	private final Map<Integer, Click> handlers = new HashMap<>();
 
 	public Gui(int rows, String title) {
-		this.inventory = Bukkit.createInventory(this, rows * 9, Ui.legacy(title));
+		this.inventory = Bukkit.createInventory(this, rows * 9, Ui.legacy(fit(title)));
+	}
+
+	/** Chest titles have room for about 28 characters; longer ones spill past the menu's edge. */
+	static String fit(String title) {
+		String visible = title.replaceAll("[&§][0-9a-fk-orA-FK-OR]", "");
+		if (visible.length() <= 28) {
+			return title;
+		}
+		// cut the visible text, keeping colour codes in front of it
+		StringBuilder out = new StringBuilder();
+		int seen = 0;
+		for (int i = 0; i < title.length() && seen < 27; i++) {
+			char c = title.charAt(i);
+			if ((c == '&' || c == '§') && i + 1 < title.length() && "0123456789abcdefklmnorABCDEFKLMNOR".indexOf(title.charAt(i + 1)) >= 0) {
+				out.append(c).append(title.charAt(++i));
+				continue;
+			}
+			out.append(c);
+			seen++;
+		}
+		return out.append('…').toString();
 	}
 
 	@Override

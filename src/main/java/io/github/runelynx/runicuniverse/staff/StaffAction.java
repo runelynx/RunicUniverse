@@ -48,6 +48,11 @@ public final class StaffAction {
 	public StaffAction complete(Completer c) { this.completer = c; return this; }
 	public StaffAction menu(MenuClick m) { this.menuClick = m; return this; }
 
+	/** Optional icon for a choice in the menu's choice steps (e.g. a crate key's own item). Null = default icon. */
+	public interface ChoiceIcon { org.bukkit.inventory.ItemStack icon(int argIndex, String choice); }
+	ChoiceIcon choiceIcon;
+	public StaffAction choiceIcon(ChoiceIcon c) { this.choiceIcon = c; return this; }
+
 	public String name() { return name; }
 	public String area() { return area; }
 	public String description() { return description; }

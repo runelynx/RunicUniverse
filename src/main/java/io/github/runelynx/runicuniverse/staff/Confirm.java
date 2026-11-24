@@ -56,7 +56,7 @@ public final class Confirm {
 
 	/** Ask with a Yes / No menu. */
 	public static void menu(Player p, String what, List<String> details, Runnable action, Runnable back) {
-		Gui g = new Gui(3, "&8Confirm: &0" + (what.length() > 24 ? what.substring(0, 24) + "…" : what));
+		Gui g = new Gui(3, "&8Are you sure?"); // the full question is on the paper and the Yes button
 		List<String> lore = new ArrayList<>();
 		lore.add("&7" + what);
 		if (details != null) {
