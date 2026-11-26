@@ -21,7 +21,8 @@ public final class StaffMenu {
 	public static void main(Player p) {
 		Gui g = new Gui(4, "&8Runic Staff &7· &3" + RunicUniverse.SERVER_NAME);
 		g.set(4, Gui.item("NETHER_STAR", "&b&lRunic Staff", "&7Server: &f" + RunicUniverse.SERVER_NAME,
-				"&7Pick an area below.", "", "&8Tip: everything here also works as", "&8typed commands, e.g. &7/rs help"), null);
+				"&7Pick an area below.", StaffPrefs.cmd(p, ""), StaffPrefs.cmd(p, "&8Tip: everything here also works as"),
+				StaffPrefs.cmd(p, "&8typed commands, e.g. &7/rs help")), null);
 		int i = 0;
 		for (String area : StaffRegistry.topLevel()) {
 			if (StaffRegistry.countFor(area, p) == 0 || i >= INNER.length) {
@@ -29,6 +30,10 @@ public final class StaffMenu {
 			}
 			g.set(INNER[i++], areaIcon(p, area), (pl, t) -> openArea(pl, area));
 		}
+		boolean show = StaffPrefs.showCommands(p);
+		g.set(35, Gui.item(show ? "COMMAND_BLOCK" : "CHAIN_COMMAND_BLOCK", "&fShow commands: " + (show ? "&aon" : "&7off"),
+				"&7Show the matching typed command", "&7next to each tool in these menus.", "&8Only changes your own menus.", "&eClick to turn " + (show ? "off" : "on")),
+				(pl, t) -> { StaffPrefs.setShowCommands(pl, !show); main(pl); });
 		g.set(31, Gui.item("BOOK", "&f&lHelp", "&7All /rs commands you can use", "&7here, as clickable chat lines"),
 				(pl, t) -> {
 					pl.closeInventory();
@@ -43,7 +48,7 @@ public final class StaffMenu {
 		StaffAction single = singleTool(p, area);
 		List<String> lore = new ArrayList<>();
 		if (single != null) {
-			for (String line : wrap(single.description, 34)) {
+			for (String line : wrap(StaffPrefs.text(p, single.description), 34)) {
 				lore.add("&7" + line);
 			}
 		} else {
@@ -91,11 +96,11 @@ public final class StaffMenu {
 				break;
 			}
 			List<String> lore = new ArrayList<>();
-			for (String line : wrap(a.description, 34)) {
+			for (String line : wrap(StaffPrefs.text(p, a.description), 34)) {
 				lore.add("&7" + line);
 			}
 			lore.add("");
-			lore.add("&8/rs " + a.name + (a.usage.isEmpty() ? "" : " " + a.usage));
+			if (StaffPrefs.showCommands(p)) lore.add("&8/rs " + a.name + (a.usage.isEmpty() ? "" : " " + a.usage));
 			lore.add(a.menuClick != null || a.usage.isEmpty() ? "&eClick to open" : a.targetsPlayer ? "&eClick to pick a player" : "&eClick to fill in");
 			g.set(INNER[i++], Gui.item(a.icon, "&b" + a.name, lore), (pl, t) -> click(pl, a));
 		}
@@ -172,7 +177,7 @@ public final class StaffMenu {
 		for (String opt : options.subList(0, shown)) {
 			org.bukkit.inventory.ItemStack icon = a.choiceIcon == null ? null : a.choiceIcon.icon(chosen.size(), opt);
 			if (icon == null) {
-				icon = Gui.item(a.icon, "&b" + opt, "&7" + typed + opt, "&eClick to choose");
+				icon = Gui.item(a.icon, "&b" + opt, StaffPrefs.cmd(p, "&7" + typed + opt), "&eClick to choose");
 			}
 			g.set(slot++, icon, (pl, t) -> {
 				List<String> next = new ArrayList<>(chosen);

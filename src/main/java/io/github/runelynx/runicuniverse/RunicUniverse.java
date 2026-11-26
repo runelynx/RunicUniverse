@@ -76,6 +76,7 @@ public class RunicUniverse extends JavaPlugin implements PluginMessageListener, 
 		getCommand("rs").setExecutor(rs);
 		getCommand("rs").setTabCompleter(rs);
 		io.github.runelynx.runicuniverse.staff.Gui.init(this);
+		io.github.runelynx.runicuniverse.staff.StaffPrefs.init(this);
 		io.github.runelynx.runicuniverse.staff.CoreActions.register();
 
 		ChatCensor.censoredWords.clear();
