@@ -228,7 +228,7 @@ public final class StaffMenu {
 		g.openLater(p);
 	}
 
-	static List<String> wrap(String text, int width) {
+	public static List<String> wrap(String text, int width) {
 		List<String> out = new ArrayList<>();
 		StringBuilder line = new StringBuilder();
 		for (String w : text.split(" ")) {

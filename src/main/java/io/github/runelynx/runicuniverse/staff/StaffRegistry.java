@@ -33,6 +33,21 @@ public final class StaffRegistry {
 		AREAS.putIfAbsent(a.area, "BOOK");
 	}
 
+	/** Declare a top-level area with its icon, placed just before another area (or at the end if that isn't there). */
+	public static void area(String name, String icon, String before) {
+		if (AREAS.containsKey(name) || !AREAS.containsKey(before)) {
+			AREAS.put(name, icon);
+			return;
+		}
+		LinkedHashMap<String, String> copy = new LinkedHashMap<>();
+		for (Map.Entry<String, String> e : AREAS.entrySet()) {
+			if (e.getKey().equals(before)) copy.put(name, icon);
+			copy.put(e.getKey(), e.getValue());
+		}
+		AREAS.clear();
+		AREAS.putAll(copy);
+	}
+
 	/** Declare a sub-menu inside another area, e.g. subArea("Ranks", "Players", "LADDER"). */
 	public static void subArea(String name, String parent, String icon) {
 		AREAS.put(name, icon);
