@@ -15,6 +15,23 @@ import java.util.List;
 import java.util.logging.Level;
 
 public class ChatCensor {
+
+	/**
+	 * Where the shared censor list (RunicData.yml) lives. It was hard-coded to the GCP Linux path, which doesn't exist on
+	 * the Windows host, so the list loaded empty (2026-11-26). Order: config "RunicDataFile", the old Linux path if it
+	 * exists, then Survival's plugins folder on the Windows host (all four servers run on that machine and share it).
+	 */
+	static File dataFile(String filename) {
+		String configured = RunicUniverse.getInstance().getConfig().getString("RunicDataFile", "");
+		if (configured != null && !configured.isEmpty()) {
+			return new File(configured);
+		}
+		File linux = new File("/home/AMP/.ampdata/instances/Survival/Minecraft/plugins", filename);
+		if (linux.exists()) {
+			return linux;
+		}
+		return new File("C:/AMPDatastore/Instances/Survival01/Minecraft/plugins", filename);
+	}
 	public static ArrayList<String> censoredWords = new ArrayList<>();
 	
 	public static Boolean addBadWordToYML(String newBadWord, String changerName) {
@@ -27,7 +44,7 @@ public class ChatCensor {
 		}
 
 		String filename = "RunicData.yml";
-		File dataFile = new File("/home/AMP/.ampdata/instances/Survival/Minecraft/plugins", filename);
+		File dataFile = dataFile(filename);
 		FileConfiguration dataConfig = YamlConfiguration.loadConfiguration(dataFile);
 
 		try {
@@ -53,7 +70,7 @@ public class ChatCensor {
 
 	public static Boolean removeBadWordFromYML(String badWord, String changerName) {
 		String filename = "RunicData.yml";
-		File dataFile = new File("/home/AMP/.ampdata/instances/Survival/Minecraft/plugins", filename);
+		File dataFile = dataFile(filename);
 		FileConfiguration dataConfig = YamlConfiguration.loadConfiguration(dataFile);
 
 		try {
@@ -77,7 +94,7 @@ public class ChatCensor {
 	
 	public static List<String> listBadWordsFromYML() {
 		String filename = "RunicData.yml";
-		File dataFile = new File("/home/AMP/.ampdata/instances/Survival/Minecraft/plugins", filename);
+		File dataFile = dataFile(filename);
 		FileConfiguration dataConfig = YamlConfiguration.loadConfiguration(dataFile);
 
 		return dataConfig.getStringList("Badwords");
