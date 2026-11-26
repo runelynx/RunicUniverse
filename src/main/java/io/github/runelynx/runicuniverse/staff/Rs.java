@@ -94,7 +94,7 @@ public final class Rs implements TabExecutor {
 				continue;
 			}
 			any = true;
-			s.sendMessage(Component.text(" " + area, NamedTextColor.GOLD, TextDecoration.BOLD));
+			s.sendMessage(Component.text(" " + StaffRegistry.path(area), NamedTextColor.GOLD, TextDecoration.BOLD));
 			for (StaffAction a : list) {
 				String full = "/rs " + a.name + (a.usage.isEmpty() ? "" : " " + a.usage);
 				s.sendMessage(Component.text("   ")

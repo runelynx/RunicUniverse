@@ -19,49 +19,15 @@ public final class StaffMenu {
 	private static final int[] INNER = { 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34 };
 
 	public static void main(Player p) {
-		List<String> areas = new ArrayList<>();
-		for (String area : StaffRegistry.AREAS.keySet()) {
-			for (StaffAction a : StaffRegistry.inArea(area)) {
-				if (a.allowed(p)) {
-					areas.add(area);
-					break;
-				}
-			}
-		}
 		Gui g = new Gui(4, "&8Runic Staff &7· &3" + RunicUniverse.SERVER_NAME);
 		g.set(4, Gui.item("NETHER_STAR", "&b&lRunic Staff", "&7Server: &f" + RunicUniverse.SERVER_NAME,
 				"&7Pick an area below.", "", "&8Tip: everything here also works as", "&8typed commands, e.g. &7/rs help"), null);
 		int i = 0;
-		for (String area : areas) {
-			int count = 0;
-			for (StaffAction a : StaffRegistry.inArea(area)) {
-				if (a.allowed(p)) {
-					count++;
-				}
+		for (String area : StaffRegistry.topLevel()) {
+			if (StaffRegistry.countFor(area, p) == 0 || i >= INNER.length) {
+				continue;
 			}
-			final String ar = area;
-			StaffAction only = null;
-			if (count == 1) {
-				for (StaffAction a : StaffRegistry.inArea(area)) {
-					if (a.allowed(p)) {
-						only = a;
-					}
-				}
-			}
-			if (only != null) {
-				// One tool in this area: skip the in-between menu and open the tool itself.
-				final StaffAction single = only;
-				List<String> lore = new ArrayList<>();
-				for (String line : wrap(single.description, 34)) {
-					lore.add("&7" + line);
-				}
-				lore.add("");
-				lore.add("&eClick to open");
-				g.set(INNER[i++], Gui.item(StaffRegistry.AREAS.get(area), "&e&l" + area, lore), (pl, t) -> click(pl, single));
-			} else {
-				g.set(INNER[i++], Gui.item(StaffRegistry.AREAS.get(area), "&e&l" + area, "&7" + count + " tool" + (count == 1 ? "" : "s"),
-						"", "&eClick to open"), (pl, t) -> area(pl, ar));
-			}
+			g.set(INNER[i++], areaIcon(p, area), (pl, t) -> openArea(pl, area));
 		}
 		g.set(31, Gui.item("BOOK", "&f&lHelp", "&7All /rs commands you can use", "&7here, as clickable chat lines"),
 				(pl, t) -> {
@@ -72,16 +38,54 @@ public final class StaffMenu {
 		g.openLater(p); // also reached from "Back" clicks inside other menus
 	}
 
-	public static void area(Player p, String area) {
-		List<StaffAction> list = new ArrayList<>();
-		for (StaffAction a : StaffRegistry.inArea(area)) {
-			if (a.allowed(p)) {
-				list.add(a);
+	/** Icon for an area or sub-menu. An area holding exactly one tool (and no sub-menus) opens that tool directly. */
+	static org.bukkit.inventory.ItemStack areaIcon(Player p, String area) {
+		StaffAction single = singleTool(p, area);
+		List<String> lore = new ArrayList<>();
+		if (single != null) {
+			for (String line : wrap(single.description, 34)) {
+				lore.add("&7" + line);
 			}
+		} else {
+			int count = StaffRegistry.countFor(area, p);
+			lore.add("&7" + count + " tool" + (count == 1 ? "" : "s"));
 		}
-		int rows = Math.min(6, 2 + (list.size() + 6) / 7);
-		Gui g = new Gui(rows, "&8Staff &7· &0" + area);
+		lore.add("");
+		lore.add("&eClick to open");
+		return Gui.item(StaffRegistry.AREAS.get(area), "&e&l" + area, lore);
+	}
+
+	static StaffAction singleTool(Player p, String area) {
+		List<StaffAction> l = StaffRegistry.allowedIn(area, p);
+		for (String c : StaffRegistry.children(area)) {
+			if (StaffRegistry.countFor(c, p) > 0) return null;
+		}
+		return l.size() == 1 ? l.get(0) : null;
+	}
+
+	static void openArea(Player p, String area) {
+		StaffAction single = singleTool(p, area);
+		if (single != null) {
+			click(p, single);
+		} else {
+			area(p, area);
+		}
+	}
+
+	public static void area(Player p, String area) {
+		List<String> subs = new ArrayList<>();
+		for (String c : StaffRegistry.children(area)) {
+			if (StaffRegistry.countFor(c, p) > 0) subs.add(c);
+		}
+		List<StaffAction> list = StaffRegistry.allowedIn(area, p);
+		int n = subs.size() + list.size();
+		int rows = Math.min(6, 2 + (n + 6) / 7);
+		Gui g = new Gui(rows, "&8Staff &7· &0" + StaffRegistry.path(area));
 		int i = 0;
+		for (String c : subs) {
+			if (i >= INNER.length || INNER[i] >= (rows - 1) * 9) break;
+			g.set(INNER[i++], areaIcon(p, c), (pl, t) -> openArea(pl, c));
+		}
 		for (StaffAction a : list) {
 			if (i >= INNER.length || INNER[i] >= (rows - 1) * 9) {
 				break;
@@ -96,7 +100,9 @@ public final class StaffMenu {
 			g.set(INNER[i++], Gui.item(a.icon, "&b" + a.name, lore), (pl, t) -> click(pl, a));
 		}
 		int last = (rows - 1) * 9;
-		g.set(last, Gui.item("ARROW", "&7« Back"), (pl, t) -> main(pl));
+		String parent = StaffRegistry.PARENT.get(area);
+		g.set(last, Gui.item("ARROW", "&7« Back" + (parent == null ? "" : " to " + parent)),
+				(pl, t) -> { if (parent == null) main(pl); else area(pl, parent); });
 		g.frameRow(0).frameRow(rows - 1);
 		g.openLater(p);
 	}

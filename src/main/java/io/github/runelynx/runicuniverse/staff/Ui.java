@@ -43,7 +43,8 @@ public final class Ui {
 		if (text == null) {
 			return Component.empty();
 		}
-		return LegacyComponentSerializer.legacySection().deserialize(text.replace('&', '§'));
+		// Only &X where X is a real colour/format code becomes a colour; a plain & ("Events & Games") stays as text.
+		return LegacyComponentSerializer.legacySection().deserialize(text.replaceAll("&([0-9a-fk-orA-FK-OR])", "§$1"));
 	}
 
 	/** [Label] that runs a command when clicked. */

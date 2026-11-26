@@ -38,7 +38,7 @@ public final class CoreActions {
 					playerCard(s, a[0]);
 				}));
 
-		StaffRegistry.register(StaffAction.of("nearall", "Players").icon("SPYGLASS")
+		StaffRegistry.register(StaffAction.of("nearall", "Tools").icon("SPYGLASS")
 				.desc("For every online player: their 5 nearest other players and how far away (up to 1,000 blocks)")
 				.exec((s, a) -> nearAll(s)));
 
