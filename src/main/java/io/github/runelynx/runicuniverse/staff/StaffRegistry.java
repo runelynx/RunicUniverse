@@ -29,7 +29,12 @@ public final class StaffRegistry {
 	private static final List<Function<OfflinePlayer, List<Component>>> PLAYER_INFO = new ArrayList<>();
 
 	public static void register(StaffAction a) {
-		ACTIONS.put(a.name, a);
+		StaffAction old = ACTIONS.put(a.name, a);
+		if (old != null && old != a) {
+			// Two plugins used the same /rs name: the later one wins. Say so loudly (this hid RunicFX on Survival once).
+			io.github.runelynx.runicuniverse.RunicUniverse.getInstance().getLogger().warning("[rs] /rs " + a.name
+					+ " was registered twice (" + old.area + " and " + a.area + "); the " + a.area + " one replaced the other.");
+		}
 		AREAS.putIfAbsent(a.area, "BOOK");
 	}
 
