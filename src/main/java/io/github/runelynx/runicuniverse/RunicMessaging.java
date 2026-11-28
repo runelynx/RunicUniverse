@@ -22,19 +22,19 @@ public class RunicMessaging {
 	private static int AnnTask = 0;
 
 	public enum RunicFormat {
-		AFTERLIFE(DARK_RED + "Runic" + DARK_GRAY + "Afterlife" + GRAY + " > " + GRAY),
-		BORDERLANDS(DARK_RED + "Border" + DARK_PURPLE + "Lands" + GRAY + " > " + AQUA),
-		FAITH(LIGHT_PURPLE + "RunicFaith" + GRAY + " > " + GRAY),
-		CASINO(GOLD + "RunicCasino" + GRAY + " > " + GRAY),
-		RANKS(GREEN + "RunicRanks" + GRAY + " > " + GRAY),
-		EXPLORER(YELLOW + "ExplorersLeague" + GRAY + " > " + GRAY),
+		// 2026-11-28: compact symbol prefixes instead of "RunicXxx >" names (less chat clutter). One place to restyle.
+		AFTERLIFE(DARK_RED + "☠ " + GRAY),        // graves / souls
+		BORDERLANDS(GREEN + "▲ " + AQUA),         // rank drops (rank-related)
+		FAITH(LIGHT_PURPLE + "✦ " + GRAY),
+		CASINO(GOLD + "♦ " + GRAY),
+		RANKS(GREEN + "▲ " + GRAY),
+		EXPLORER(YELLOW + "⌖ " + GRAY),           // location target
 		EMPTY(GRAY + ""),
-		SYSTEM(DARK_AQUA + "RunicEngine" + GRAY + " > " + GRAY),
-		RAFFLE(LIGHT_PURPLE + "Runic" + YELLOW + "Raffle" + GRAY + " > "
-				+ GRAY),
-		HELP(BLUE + "Runic" + AQUA + "Help" + GRAY + " > " + GRAY),
-		ERROR(DARK_RED + "Error" + RED + " > " + GRAY),
-		JUSTICE(YELLOW + "Runic" + GOLD + "Justice" + GRAY + " > " + GRAY);
+		SYSTEM(GRAY + ""),                             // general replies: no prefix
+		RAFFLE(LIGHT_PURPLE + "⚄ " + GRAY),       // die five
+		HELP(GRAY + ""),
+		ERROR(RED + "✖ " + GRAY),
+		JUSTICE(GOLD + "⚖ " + GRAY);
 		private String text;
 
 		RunicFormat(String txt) {
