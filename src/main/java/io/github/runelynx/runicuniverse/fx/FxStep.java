@@ -5,7 +5,12 @@ import java.util.*;
 /** One animation step of a RECIPE effect. Every field is editable in the RunicFX editor. */
 public final class FxStep {
 
-	public static final List<String> SHAPES = Arrays.asList("rain", "burst", "ring", "helix", "column", "sphere");
+	public static final List<String> SHAPES = Arrays.asList("rain", "burst", "ring", "helix", "column", "sphere", "firework");
+	public static final List<String> FIREWORK_TYPES = Arrays.asList("BALL", "BALL_LARGE", "STAR", "BURST", "CREEPER");
+
+	public String fireworkType = "BALL"; // firework: explosion shape
+	public boolean flicker = false;      // firework: twinkle
+	public boolean trail = false;        // firework: sparkle trail
 
 	public String shape = "burst";
 	public String particle = "DUST";
@@ -33,7 +38,8 @@ public final class FxStep {
 				+ " count=" + count + " radius=" + fmt(radius) + " height=" + fmt(height) + " top=" + fmt(top)
 				+ " bottom=" + fmt(bottom) + " rate=" + rate + " speedMin=" + fmt(speedMin) + " speedMax=" + fmt(speedMax) + " spacing=" + fmt(spacing)
 				+ " duration=" + duration + " interval=" + interval + " delay=" + delay + " follow=" + follow
-				+ " sound=" + (sound == null || sound.isEmpty() ? "-" : sound) + " volume=" + fmt(volume) + " pitch=" + fmt(pitch);
+				+ " sound=" + (sound == null || sound.isEmpty() ? "-" : sound) + " volume=" + fmt(volume) + " pitch=" + fmt(pitch)
+				+ " fireworkType=" + fireworkType + " flicker=" + flicker + " trail=" + trail;
 	}
 
 	public static FxStep parse(String s) {
@@ -57,6 +63,9 @@ public final class FxStep {
 					case "speedMin": st.speedMin = Double.parseDouble(v); break;
 					case "speedMax": st.speedMax = Double.parseDouble(v); break;
 					case "spacing": st.spacing = Double.parseDouble(v); break;
+					case "fireworkType": st.fireworkType = v.toUpperCase(Locale.ROOT); break;
+					case "flicker": st.flicker = Boolean.parseBoolean(v); break;
+					case "trail": st.trail = Boolean.parseBoolean(v); break;
 					case "duration": st.duration = Integer.parseInt(v); break;
 					case "interval": st.interval = Integer.parseInt(v); break;
 					case "delay": st.delay = Integer.parseInt(v); break;

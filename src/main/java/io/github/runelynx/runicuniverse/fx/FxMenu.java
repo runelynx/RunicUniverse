@@ -335,6 +335,7 @@ final class FxMenu {
 			case "helix": return "TWISTING_VINES";
 			case "column": return "END_ROD";
 			case "sphere": return "SNOWBALL";
+			case "firework": return "FIREWORK_ROCKET";
 			default: return "FIRE_CHARGE";
 		}
 	}
@@ -356,12 +357,30 @@ final class FxMenu {
 			save(pl, d, "particle");
 			step(pl, d, idx);
 		});
-		boolean colourable = s.particle.equals("DUST") || s.particle.equals("FALLING_DUST");
+		boolean firework = s.shape.equals("firework");
+		boolean colourable = firework || s.particle.equals("DUST") || s.particle.equals("FALLING_DUST") || s.particle.equals("NOTE");
 		g.set(11, Gui.item(colourable ? "PINK_DYE" : "GRAY_DYE", "&fColours (" + s.colors.size() + ")",
-				colourable ? "&7Used by this particle" : "&c" + s.particle + " has a fixed colour in Minecraft,",
+				colourable ? (firework ? "&7The firework's colours" : "&7Used by this particle") : "&c" + s.particle + " has a fixed colour in Minecraft,",
 				colourable ? null : "&cso these colours don't apply to it.",
-				"&8Only DUST (any colour) and FALLING_DUST", "&8(nearest wool colour) can be coloured.", "&eClick to pick colours"),
+				"&8Colourable: DUST (any colour), FALLING_DUST (nearest", "&8wool colour), NOTE (nearest note colour) and", "&8the firework shape (any colours).", "&eClick to pick colours"),
 				(pl, t) -> palette(pl, d, idx));
+		if (firework) {
+			g.set(29, Gui.item("FIREWORK_STAR", "&fFirework type: &e" + s.fireworkType, "&7" + String.join(", ", FxStep.FIREWORK_TYPES), "&eClick for the next type"), (pl, t) -> {
+				s.fireworkType = FxStep.FIREWORK_TYPES.get((FxStep.FIREWORK_TYPES.indexOf(s.fireworkType) + 1) % FxStep.FIREWORK_TYPES.size());
+				save(pl, d, "firework type");
+				step(pl, d, idx);
+			});
+			g.set(30, Gui.item("GLOWSTONE_DUST", "&fTwinkle: " + (s.flicker ? "&ayes" : "&7no"), "&eClick to switch"), (pl, t) -> {
+				s.flicker = !s.flicker;
+				save(pl, d, "firework twinkle");
+				step(pl, d, idx);
+			});
+			g.set(31, Gui.item("BLAZE_ROD", "&fSparkle trail: " + (s.trail ? "&ayes" : "&7no"), "&eClick to switch"), (pl, t) -> {
+				s.trail = !s.trail;
+				save(pl, d, "firework trail");
+				step(pl, d, idx);
+			});
+		}
 		num(g, 12, p, d, s, "Size", "SLIME_BALL", s.size, 0.1, 4, "Dust particle size", v -> s.size = v);
 		num(g, 13, p, d, s, "Count", "PRISMARINE_CRYSTALS", s.count, 1, 400, "Particles per pulse (burst, ring, column, sphere; helix speed). Not used by rain.", v -> s.count = (int) v);
 		num(g, 14, p, d, s, "Radius", "TARGET", s.radius, 0, 16, "How wide (blocks)", v -> s.radius = v);
@@ -408,6 +427,7 @@ final class FxMenu {
 			case "helix": return "Two strands spiralling from Bottom to Top";
 			case "column": return "A vertical line from Bottom to Top";
 			case "sphere": return "A hollow ball at Height";
+			case "firework": return "Real coloured firework bursts at Height (Count = how many per pulse, up to 8; harmless)";
 			default: return "A burst of particles inside a ball at Height";
 		}
 	}

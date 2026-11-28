@@ -74,6 +74,28 @@ public final class FxEngine {
 		return (m == null ? org.bukkit.Material.WHITE_WOOL : m).createBlockData();
 	}
 
+	/** Fireworks spawned by RunicFX carry this tag; FxEvents cancels any damage they would do. */
+	public static final String FIREWORK_TAG = "runicfx";
+
+	/** The note-wheel value (0-1, in 1/24 steps) whose colour is closest to the hex colour. Same maths Minecraft uses. */
+	static double noteValue(String hex) {
+		Color c = color(hex);
+		double best = 0;
+		double bestDist = Double.MAX_VALUE;
+		for (int n = 0; n <= 24; n++) {
+			double v = n / 24.0;
+			double r = Math.max(0, Math.sin((v + 0.0) * Math.PI * 2) * 0.65 + 0.35) * 255;
+			double g = Math.max(0, Math.sin((v + 1 / 3.0) * Math.PI * 2) * 0.65 + 0.35) * 255;
+			double b = Math.max(0, Math.sin((v + 2 / 3.0) * Math.PI * 2) * 0.65 + 0.35) * 255;
+			double dist = Math.pow(c.getRed() - r, 2) + Math.pow(c.getGreen() - g, 2) + Math.pow(c.getBlue() - b, 2);
+			if (dist < bestDist) {
+				bestDist = dist;
+				best = v;
+			}
+		}
+		return best;
+	}
+
 	static Color color(String hex) {
 		try {
 			return Color.fromRGB(Integer.parseInt(hex.replace("#", ""), 16) & 0xFFFFFF);
@@ -213,11 +235,13 @@ public final class FxEngine {
 			return;
 		}
 		final boolean falling = isFallingDust(particle); // falls by itself: spawn once, never redraw
-		final boolean dust = isDust(particle) || falling;
+		final boolean note = particle.name().equals("NOTE"); // coloured through the note-block colour wheel
+		final boolean dust = isDust(particle) || falling || note;
 		final List<Object> dustData = new ArrayList<>();
 		if (dust) {
 			for (String c : s.colors.isEmpty() ? Collections.singletonList("#FFFFFF") : s.colors) {
-				dustData.add(falling ? fallingDustData(c) : new Particle.DustOptions(color(c), (float) Math.max(0.1, Math.min(4, s.size))));
+				dustData.add(note ? (Object) noteValue(c) : falling ? fallingDustData(c)
+						: new Particle.DustOptions(color(c), (float) Math.max(0.1, Math.min(4, s.size))));
 			}
 		}
 		final double spacing = Math.max(0.05, s.spacing);
@@ -246,8 +270,32 @@ public final class FxEngine {
 			}
 
 			void spawn(World w, double x, double y, double z, Object data) {
-				if (data != null) w.spawnParticle(particle, x, y, z, 1, 0, 0, 0, 0, data);
-				else w.spawnParticle(particle, x, y, z, 1, 0, 0, 0, 0);
+				if (note && data instanceof Double) {
+					// NOTE colour = offsetX (0-1 around the note wheel) when count is 0
+					w.spawnParticle(particle, x, y, z, 0, ((Double) data).doubleValue(), 0.0, 0.0, 1.0);
+				} else if (data != null) {
+					w.spawnParticle(particle, x, y, z, 1, 0, 0, 0, 0, data);
+				} else {
+					w.spawnParticle(particle, x, y, z, 1, 0, 0, 0, 0);
+				}
+			}
+
+			void firework(World w, Location at) {
+				org.bukkit.entity.Firework fw = w.spawn(at, org.bukkit.entity.Firework.class);
+				fw.addScoreboardTag(FIREWORK_TAG);
+				org.bukkit.inventory.meta.FireworkMeta meta = fw.getFireworkMeta();
+				org.bukkit.FireworkEffect.Type type;
+				try {
+					type = org.bukkit.FireworkEffect.Type.valueOf(s.fireworkType);
+				} catch (IllegalArgumentException e) {
+					type = org.bukkit.FireworkEffect.Type.BALL;
+				}
+				List<Color> cols = new ArrayList<>();
+				for (String c : s.colors.isEmpty() ? Collections.singletonList("#FFFFFF") : s.colors) cols.add(color(c));
+				meta.addEffect(org.bukkit.FireworkEffect.builder().with(type).withColor(cols).flicker(s.flicker).trail(s.trail).build());
+				meta.setPower(0);
+				fw.setFireworkMeta(meta);
+				fw.detonate();
 			}
 
 			@Override
@@ -297,6 +345,16 @@ public final class FxEngine {
 							if (d.y < s.bottom) it.remove();
 						}
 						if (t >= duration && drops.isEmpty()) cancel();
+						break;
+					}
+					case "firework": {
+						if (t >= duration) { cancel(); break; }
+						if (t % interval != 0) break;
+						int n = Math.max(1, Math.min(8, count));
+						for (int i = 0; i < n; i++) {
+							double a = rnd.nextDouble() * Math.PI * 2, r = s.radius * Math.sqrt(rnd.nextDouble());
+							firework(w, new Location(w, bx + Math.cos(a) * r, by + s.height, bz + Math.sin(a) * r));
+						}
 						break;
 					}
 					case "helix": {

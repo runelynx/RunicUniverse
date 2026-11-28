@@ -77,6 +77,14 @@ public final class FxEvents implements Listener {
 		}, 3);
 	}
 
+	/** RunicFX fireworks are for show: they never hurt anyone or anything. */
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+	public void onFireworkDamage(org.bukkit.event.entity.EntityDamageByEntityEvent e) {
+		if (e.getDamager() instanceof org.bukkit.entity.Firework && e.getDamager().getScoreboardTags().contains(FxEngine.FIREWORK_TAG)) {
+			e.setCancelled(true);
+		}
+	}
+
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onWorld(PlayerChangedWorldEvent e) {
 		Player p = e.getPlayer();
