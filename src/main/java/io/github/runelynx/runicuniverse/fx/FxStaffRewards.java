@@ -206,49 +206,118 @@ final class FxStaffRewards {
 		});
 	}
 
-	// ------------------------------------------------------------------ no-FX zones
+	// ------------------------------------------------------------------ zones
+
+	/** First corner of a box zone being made, per staff member. */
+	private static final Map<UUID, Location> CORNER = new HashMap<>();
 
 	static void zones(Player p) {
-		Gui g = new Gui(6, "&8No-FX zones on " + RunicUniverse.SERVER_NAME);
+		Gui g = new Gui(6, "&8RunicFX zones on " + RunicUniverse.SERVER_NAME);
 		int slot = 0;
 		for (FxZones.Zone z : FxZones.all()) {
 			if (slot >= 45) break;
-			g.set(slot++, Gui.item(z.radius < 0 ? "GRASS_BLOCK" : "BARRIER", "&f" + (z.name == null ? "Zone " + z.id : z.name), "&7" + z.where(),
-					z.createdBy == null ? null : "&8Added by " + z.createdBy, "", "&eLeft-click: go there", "&eRight-click: remove"), (pl, t) -> {
-				if (t.isRightClick()) {
-					Confirm.menu(pl, "Remove the no-FX zone " + (z.name == null ? z.id : z.name), null,
-							() -> async(() -> FxZones.remove(z.id), ok -> {
-								if (ok) Audit.log(pl, "fx zone remove", z.name + " (" + z.where() + ")");
-								zones(pl);
-							}), () -> zones(pl));
-				} else if (z.radius >= 0 && Bukkit.getWorld(z.world) != null) {
-					pl.closeInventory();
-					pl.teleport(new Location(Bukkit.getWorld(z.world), z.x, z.y, z.z));
-				}
-			});
+			g.set(slot++, Gui.item(z.allow ? "LIME_STAINED_GLASS" : z.radius < 0 ? "GRASS_BLOCK" : "BARRIER",
+					(z.allow ? "&aAllow: &f" : "&cBlock: &f") + (z.name == null ? "Zone " + z.id : z.name), "&7" + z.where(),
+					z.createdBy == null ? null : "&8Added by " + z.createdBy, "", "&eClick for options"), (pl, t) -> zone(pl, z));
 		}
-		FxZones.Zone here = FxZones.at(p.getLocation());
+		Location c1 = CORNER.get(p.getUniqueId());
 		g.set(45, Gui.item("ARROW", "&7« RunicFX"), (pl, t) -> FxMenu.main(pl));
-		g.set(48, Gui.item("LIME_DYE", "&a&lAdd a zone around me", "&7Players' event effects won't play", "&7within the radius you choose.",
-				here != null ? "&8You're already inside: " + here.name : null), (pl, t) -> FxPrompt.ask(pl, "Name for this zone (e.g. Hide and Seek arena)", name ->
-				whole(pl, "Radius in blocks?", 1, 500, r -> {
-					Location at = pl.getLocation();
-					async(() -> FxZones.add(name.trim(), at, r, pl.getName()), ok -> {
-						if (ok) Audit.log(pl, "fx zone add", name.trim() + " (" + at.getWorld().getName() + " " + at.getBlockX() + "," + at.getBlockY() + "," + at.getBlockZ() + " r" + r + ")");
-						zones(pl);
-					});
-				})));
+		g.set(47, Gui.item("SLIME_BALL", "&a&lAdd a zone around me", "&7A sphere with the radius you choose"),
+				(pl, t) -> pickMode(pl, allow -> FxPrompt.ask(pl, "Name for this zone (e.g. Hide and Seek arena)", name ->
+						whole(pl, "Radius in blocks?", 1, 500, r -> {
+							Location at = pl.getLocation();
+							addZone(pl, name.trim(), at, null, r, allow);
+						}))));
+		g.set(48, Gui.item("STRUCTURE_VOID", c1 == null ? "&a&lAdd a box zone" : "&a&lFinish the box zone",
+				c1 == null ? "&7Stand at one corner and click," : "&7Corner 1: " + c1.getBlockX() + ", " + c1.getBlockY() + ", " + c1.getBlockZ(),
+				c1 == null ? "&7then walk to the opposite corner" : "&7Now stand at the opposite corner and click.",
+				c1 == null ? "&7and click again." : "&eRight-click to start over"), (pl, t) -> {
+			Location first = CORNER.get(pl.getUniqueId());
+			if (first == null || t.isRightClick()) {
+				CORNER.put(pl.getUniqueId(), pl.getLocation().getBlock().getLocation());
+				Ui.ok(pl, "Corner 1 set. Walk to the opposite corner, then /rs fx → Zones → Finish the box zone. (Heights count too: use the lowest and highest points.)");
+				pl.closeInventory();
+				return;
+			}
+			if (first.getWorld() != pl.getWorld()) {
+				Ui.error(pl, "Both corners must be in the same world.");
+				CORNER.remove(pl.getUniqueId());
+				return;
+			}
+			Location second = pl.getLocation().getBlock().getLocation();
+			pickMode(pl, allow -> FxPrompt.ask(pl, "Name for this zone", name -> {
+				CORNER.remove(pl.getUniqueId());
+				addZone(pl, name.trim(), first, second, 0, allow);
+			}));
+		});
 		g.set(50, Gui.item("GRASS_BLOCK", "&fBlock this whole world", "&7" + p.getWorld().getName()),
-				(pl, t) -> Confirm.menu(pl, "Block players' effects in all of " + pl.getWorld().getName(), null, () -> {
-					Location at = pl.getLocation();
-					async(() -> FxZones.add(at.getWorld().getName() + " (whole world)", at, -1, pl.getName()), ok -> {
-						if (ok) Audit.log(pl, "fx zone add", at.getWorld().getName() + " (whole world)");
-						zones(pl);
-					});
-				}, () -> zones(pl)));
-		g.set(53, Gui.item("BOOK", "&fAbout zones", "&7Only players' event effects are blocked.", "&7Staff can still play effects anywhere.",
-				"&7Zones are per server."), null);
+				(pl, t) -> Confirm.menu(pl, "Block players' effects in all of " + pl.getWorld().getName(), null,
+						() -> addZone(pl, pl.getWorld().getName() + " (whole world)", pl.getLocation(), null, -1, false), () -> zones(pl)));
+		FxZones.Zone here = FxZones.at(p.getLocation());
+		g.set(53, Gui.item("BOOK", "&fHow zones work",
+				"&cBlock&7: players' event effects never play inside.",
+				"&aAllow&7: in a world with allow zones, effects",
+				"&7play only inside them (the rest of that world",
+				"&7is blocked). Other worlds aren't affected.",
+				"&7Staff can still play effects anywhere.",
+				"&7Zones are per server.", "",
+				"&fRight here: " + (FxZones.blocked(p.getLocation()) ? "&ceffects blocked" : "&aeffects allowed")
+						+ (here != null ? " &8(" + here.name + ")" : "")), null);
 		g.frameRow(5);
+		g.openLater(p);
+	}
+
+	static void pickMode(Player p, Consumer<Boolean> chosen) {
+		Gui g = new Gui(3, "&8Block or allow?");
+		g.set(11, Gui.item("BARRIER", "&c&lBlock zone", "&7Effects never play inside"), (pl, t) -> chosen.accept(false));
+		g.set(15, Gui.item("LIME_STAINED_GLASS", "&a&lAllow zone", "&7In this world, effects play", "&7only inside allow zones"), (pl, t) -> chosen.accept(true));
+		g.set(18, Gui.item("ARROW", "&7« Zones"), (pl, t) -> zones(pl));
+		g.frameRow(0).frameRow(2);
+		g.openLater(p);
+	}
+
+	static void addZone(Player p, String name, Location at, Location corner2, int radius, boolean allow) {
+		async(() -> FxZones.add(name, at, corner2, radius, allow, p.getName()), ok -> {
+			if (ok) {
+				Audit.log(p, "fx zone add", (allow ? "allow " : "block ") + name + " (" + at.getWorld().getName() + " " + at.getBlockX() + ","
+						+ at.getBlockY() + "," + at.getBlockZ() + (corner2 != null ? " to " + corner2.getBlockX() + "," + corner2.getBlockY() + ","
+						+ corner2.getBlockZ() : radius < 0 ? " whole world" : " r" + radius) + ")");
+				Ui.ok(p, "Zone added: " + name + ".");
+			} else {
+				Ui.error(p, "Couldn't save that zone.");
+			}
+			zones(p);
+		});
+	}
+
+	static void zone(Player p, FxZones.Zone z) {
+		String label = z.name == null ? "Zone " + z.id : z.name;
+		Gui g = new Gui(3, "&8" + label);
+		g.set(4, Gui.item(z.allow ? "LIME_STAINED_GLASS" : "BARRIER", (z.allow ? "&aAllow: &f" : "&cBlock: &f") + label, "&7" + z.where()), null);
+		g.set(11, Gui.item("ENDER_PEARL", "&fGo there", z.radius < 0 ? "&8(whole world: goes to its spawn)" : null), (pl, t) -> {
+			org.bukkit.World w = Bukkit.getWorld(z.world);
+			if (w == null) {
+				Ui.error(pl, z.world + " isn't loaded.");
+				return;
+			}
+			pl.closeInventory();
+			pl.teleport(z.radius < 0 ? w.getSpawnLocation() : z.box
+					? new Location(w, (z.x + z.x2) / 2 + 0.5, Math.max(z.y, z.y2), (z.z + z.z2) / 2 + 0.5)
+					: new Location(w, z.x, z.y, z.z));
+		});
+		g.set(13, Gui.item(z.allow ? "BARRIER" : "LIME_STAINED_GLASS", "&fSwitch to " + (z.allow ? "&cblock" : "&aallow"), "&eClick to switch"),
+				(pl, t) -> Confirm.menu(pl, "Make " + label + " a" + (z.allow ? " block" : "n allow") + " zone", null,
+						() -> async(() -> FxZones.setMode(z.id, !z.allow), ok -> {
+							if (ok) Audit.log(pl, "fx zone mode", label + " -> " + (z.allow ? "block" : "allow"));
+							zones(pl);
+						}), () -> zone(pl, z)));
+		g.set(15, Gui.item("TNT", "&cRemove"), (pl, t) -> Confirm.menu(pl, "Remove the zone " + label, null,
+				() -> async(() -> FxZones.remove(z.id), ok -> {
+					if (ok) Audit.log(pl, "fx zone remove", label + " (" + z.where() + ")");
+					zones(pl);
+				}), () -> zone(pl, z)));
+		g.set(18, Gui.item("ARROW", "&7« Zones"), (pl, t) -> zones(pl));
+		g.frameRow(0).frameRow(2);
 		g.openLater(p);
 	}
 }

@@ -87,7 +87,7 @@ final class FxMenu {
 		}
 		if (build) {
 			g.set(46, Gui.item("CHEST", "&f&lRewards", "&7Reward rules (ranks, EL, mazes)", "&7and the welcome-back reward"), (pl, t) -> FxStaffRewards.rewards(pl));
-			g.set(47, Gui.item("BARRIER", "&f&lNo-FX zones", "&7Places where players' effects", "&7never play (games, mazes...)"), (pl, t) -> FxStaffRewards.zones(pl));
+			g.set(47, Gui.item("BARRIER", "&f&lZones", "&7Where players' effects may or", "&7may not play (games, mazes, worlds)"), (pl, t) -> FxStaffRewards.zones(pl));
 		}
 		g.set(52, Gui.item("NETHER_STAR", "&fPlayer view", "&7Open /runicfx as players see it"), (pl, t) -> FxPlayerMenu.main(pl, 0));
 		g.set(53, Gui.item("SUNFLOWER", "&fRefresh", "&7Picks up edits made on other servers"), (pl, t) -> {
