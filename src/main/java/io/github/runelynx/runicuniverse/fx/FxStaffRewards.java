@@ -320,4 +320,107 @@ final class FxStaffRewards {
 		g.frameRow(0).frameRow(2);
 		g.openLater(p);
 	}
+
+	// ------------------------------------------------------------------ manage a player (helper and up)
+
+	/** Pick who to manage: an online player, or right-click to type any name. */
+	static void pickManage(Player p) {
+		StaffMenu.pickPlayer(p, "&8Manage whose RunicFX?", target -> manage(p, target.getUniqueId(), target.getName()), () -> FxMenu.main(p));
+	}
+
+	static void manageByName(Player p, String name) {
+		async(() -> FxGrants.lookup(name.trim()), t -> {
+			if (t == null) Ui.error(p, "Nobody called " + name.trim() + " has played here.");
+			else manage(p, t.getKey(), t.getValue());
+		});
+	}
+
+	/** A player's RunicFX as staff see it: their two settings, event choices and given effects, all changeable. */
+	static void manage(Player p, UUID id, String name) {
+		async(() -> new Object[] { FxPrefs.read(id), FxStore.loadBindings(id), FxGrants.load(id) }, r -> {
+			boolean[] prefs = (boolean[]) r[0];
+			@SuppressWarnings("unchecked") Map<String, String> binds = (Map<String, String>) r[1];
+			@SuppressWarnings("unchecked") Map<String, FxGrants.Grant> grants = (Map<String, FxGrants.Grant>) r[2];
+			boolean hide = prefs[0], off = prefs[1];
+			Player online = Bukkit.getPlayer(id);
+			Gui g = new Gui(6, "&8RunicFX: " + name);
+			g.set(4, Gui.head(Bukkit.getOfflinePlayer(id), "&f" + name, Arrays.asList(online != null ? "&aOnline here" : "&7Not on this server",
+					"&7Changes reach any server within a minute.")), null);
+			g.set(2, Gui.item(hide ? "ENDER_EYE" : "ENDER_PEARL", "&fOther players' effects: " + (hide ? "&chidden" : "&ashown"),
+					"&7(their Settings in /runicfx)", "&eClick to switch"), (pl, t) -> {
+				FxPrefs.setFor(id, name, !hide, off);
+				Audit.log(pl, "fx player setting", name + ": other players' effects " + (!hide ? "hidden" : "shown"));
+				tell(id, "A staff member " + (!hide ? "hid" : "showed") + " other players' effects for you. Change it any time in /runicfx → Settings.");
+				later(pl, id, name);
+			});
+			g.set(6, Gui.item(off ? "RED_CONCRETE" : "LIME_CONCRETE", "&fTheir effects: " + (off ? "&coff" : "&aon"),
+					"&7(their Settings in /runicfx)", "&eClick to switch"), (pl, t) -> {
+				FxPrefs.setFor(id, name, hide, !off);
+				Audit.log(pl, "fx player setting", name + ": their effects " + (!off ? "off" : "on"));
+				tell(id, "A staff member switched your RunicFX effects " + (!off ? "off" : "on") + ". Change it any time in /runicfx → Settings.");
+				later(pl, id, name);
+			});
+			// event choices
+			int i = 0;
+			int[] slots = { 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34 };
+			for (Map.Entry<String, String> e : FxEvents.EVENTS.entrySet()) {
+				if (i >= slots.length) break;
+				FxDef d = binds.containsKey(e.getKey()) ? FxStore.get(binds.get(e.getKey())) : null;
+				g.set(slots[i++], Gui.item(d != null ? d.icon : "GRAY_DYE", "&f" + e.getValue(), "&7Plays: " + (d != null ? "&b" + d.display : "&8nothing"),
+						d != null ? "&eRight-click to clear" : null), (pl, t) -> {
+					if (d == null || !t.isRightClick()) return;
+					async(() -> {
+						boolean ok = FxStore.bind(id, e.getKey(), null);
+						if (Bukkit.getPlayer(id) == null) FxStore.forget(id);
+						return ok;
+					}, ok -> {
+						if (ok) Audit.log(pl, "fx player event", name + ": cleared " + e.getValue() + " (was " + d.key + ")");
+						manage(pl, id, name);
+					});
+				});
+			}
+			// effects they were given
+			int slot = 37;
+			for (FxGrants.Grant gr : grants.values()) {
+				if (slot > 43) break;
+				FxDef d = FxStore.get(gr.key);
+				if (d == null) continue;
+				boolean canTake = RunicFX.canBuild(p);
+				g.set(slot++, Gui.item(d.icon, (gr.active() ? "&b" : "&8") + d.display, "&7Given: " + (gr.source == null ? "?" : gr.source),
+						gr.expires > 0 ? (gr.active() ? "&7Until " : "&cEnded ") + FxGrants.date(gr.expires) : null,
+						canTake ? "&eRight-click to take it away" : null), (pl, t) -> {
+					if (!canTake || !t.isRightClick()) return;
+					Confirm.menu(pl, "Take " + d.display + " from " + name, null, () -> async(() -> FxGrants.revoke(id, d.key), ok -> {
+						if (ok) Audit.log(pl, "fx revoke", d.key + " from " + name);
+						manage(pl, id, name);
+					}), () -> manage(pl, id, name));
+				});
+			}
+			g.set(36, Gui.item("BOOK", "&fGiven effects", "&7Row below: effects " + name + " was given.", "&8Staff and rank effects aren't listed."), null);
+			if (RunicFX.canBuild(p)) {
+				g.set(44, Gui.item("EMERALD", "&a&lGive an effect", "&7Pick one to give " + name), (pl, t) -> FxMenu.pickFx(pl, "&8Give " + name + "...", d ->
+						whole(pl, "For how many days? (0 = forever)", 0, 3650, days -> async(
+								() -> FxGrants.grant(id, name, d.key, "staff (" + pl.getName() + ")", pl.getName(), days), ok -> {
+									if (ok) Audit.log(pl, "fx grant", d.key + " to " + name + (days > 0 ? " (" + days + " days)" : ""));
+									else Ui.error(pl, name + " already has " + d.display + ".");
+									manage(pl, id, name);
+								})), () -> manage(pl, id, name)));
+			}
+			g.set(45, Gui.item("ARROW", "&7« RunicFX"), (pl, t) -> FxMenu.main(pl));
+			g.set(49, Gui.item("SUNFLOWER", "&fRefresh"), (pl, t) -> manage(pl, id, name));
+			g.frameRow(5);
+			g.openLater(p);
+		});
+	}
+
+	/** Reopen the screen after a background save has had a moment. */
+	private static void later(Player p, UUID id, String name) {
+		Bukkit.getScheduler().runTaskLater(RunicUniverse.getInstance(), () -> manage(p, id, name), 10);
+	}
+
+	/** Tell the player (if they're on this server) what staff changed. */
+	private static void tell(UUID id, String text) {
+		Player t = Bukkit.getPlayer(id);
+		if (t != null) FxPlayerMenu.msg(t, text);
+	}
 }

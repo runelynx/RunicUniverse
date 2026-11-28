@@ -156,7 +156,7 @@ public final class FxStore {
 		return BINDINGS.computeIfAbsent(id, FxStore::loadBindings);
 	}
 
-	private static Map<String, String> loadBindings(UUID id) {
+	static Map<String, String> loadBindings(UUID id) {
 		Map<String, String> m = new ConcurrentHashMap<>();
 		try (Connection c = db().openConnection();
 			 PreparedStatement ps = c.prepareStatement("SELECT EventKey, FxKey FROM rp_RunicFXBindings WHERE UUID = ?")) {

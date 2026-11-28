@@ -53,10 +53,29 @@ public final class FxPrefs {
 
 	/** Change a setting now (in memory) and save it in the background. */
 	static void set(Player p, boolean hideOthers, boolean myOff) {
-		UUID id = p.getUniqueId();
-		String name = p.getName();
-		if (hideOthers) HIDE.add(id); else HIDE.remove(id);
-		if (myOff) OFF.add(id); else OFF.remove(id);
+		setFor(p.getUniqueId(), p.getName(), hideOthers, myOff);
+	}
+
+	/** Read a player's settings straight from the database: {hideOthers, myOff}. Call off the main thread. */
+	static boolean[] read(UUID id) {
+		try (Connection c = FxStore.db().openConnection();
+			 PreparedStatement ps = c.prepareStatement("SELECT HideOthers, MyOff FROM rp_RunicFXPlayer WHERE UUID = ?")) {
+			ps.setString(1, id.toString());
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) return new boolean[] { rs.getInt(1) == 1, rs.getInt(2) == 1 };
+			}
+		} catch (SQLException | RuntimeException e) {
+			FxStore.warn("settings read failed: " + e.getMessage());
+		}
+		return new boolean[] { false, false };
+	}
+
+	/** Change anyone's settings (staff can do it for players, online or not). */
+	static void setFor(UUID id, String name, boolean hideOthers, boolean myOff) {
+		if (org.bukkit.Bukkit.getPlayer(id) != null) { // online here: takes effect now (other servers pick it up within a minute)
+			if (hideOthers) HIDE.add(id); else HIDE.remove(id);
+			if (myOff) OFF.add(id); else OFF.remove(id);
+		}
 		org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(io.github.runelynx.runicuniverse.RunicUniverse.getInstance(), () -> {
 			try (Connection c = FxStore.db().openConnection();
 				 PreparedStatement ps = c.prepareStatement("INSERT INTO rp_RunicFXPlayer (UUID, Name, HideOthers, MyOff) VALUES (?,?,?,?)"

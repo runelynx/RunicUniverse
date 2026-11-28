@@ -86,17 +86,45 @@ public final class RunicFX {
 		Bukkit.getScheduler().runTaskAsynchronously(plugin, FxStore::reload); // creates Confetti Rain on first run
 		FxEvents.hookVotifier(plugin);
 		FxRewards.startTicker();
+		// every minute: re-read online players' settings, event choices and given effects (staff changes from other servers)
+		Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+			List<UUID> ids = new ArrayList<>();
+			for (Player p : Bukkit.getOnlinePlayers()) ids.add(p.getUniqueId());
+			if (ids.isEmpty()) return;
+			Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+				for (UUID id : ids) {
+					FxPrefs.load(id);
+					FxStore.preload(id);
+					FxGrants.preload(id);
+				}
+			});
+		}, 20L * 60, 20L * 60);
 		org.bukkit.command.PluginCommand pc = ((org.bukkit.plugin.java.JavaPlugin) plugin).getCommand("runicfx");
 		if (pc != null) pc.setExecutor(new FxPlayerMenu());
 		StaffRegistry.area("RunicFX", "BLAZE_POWDER", "Server");
+		// Players area: manage one player's RunicFX (settings, event choices, given effects)
+		StaffRegistry.register(StaffAction.of("runicfx", "Players").icon("BLAZE_POWDER").perm(TRIGGER_PERM).targetsPlayer().playersOnly()
+				.desc("A player's RunicFX: switch their two settings, clear their event effects, give or take effects")
+				.usage("<player>")
+				.menu(p -> StaffMenu.pickPlayer(p, "&8RunicFX: pick a player", t -> FxStaffRewards.manage(p, t.getUniqueId(), t.getName()),
+						() -> StaffMenu.area(p, "Players")))
+				.complete((s, a) -> a.length == 1 ? CoreActions.onlineNames() : null)
+				.exec((s, a) -> {
+					if (a.length < 1) {
+						Ui.error(s, "Usage: /rs runicfx <player>  (online or offline)");
+						return;
+					}
+					FxStaffRewards.manageByName((Player) s, a[0]);
+				}));
 		StaffRegistry.register(StaffAction.of("fx", "RunicFX").icon("BLAZE_POWDER").perm(TRIGGER_PERM)
 				.desc("RunicFX: play effects on yourself or others, give your teleports and joins an effect, build new ones")
-				.usage("[menu|play <fx> [player]|list|bind <event> <fx|none>|grant <player> <fx> [days]|revoke <player> <fx>|reload]")
+				.usage("[menu|play <fx> [player]|list|bind <event> <fx|none>|grant <player> <fx> [days]|revoke <player> <fx>|player <name>|reload]")
 				.menu(FxMenu::main)
 				.complete((s, a) -> {
-					if (a.length == 1) return Arrays.asList("menu", "play", "list", "bind", "grant", "revoke", "reload");
+					if (a.length == 1) return Arrays.asList("menu", "play", "list", "bind", "grant", "revoke", "player", "reload");
 					List<String> keys = new ArrayList<>();
 					for (FxDef d : FxStore.library()) if (d.enabled) keys.add(d.key);
+					if (a[0].equalsIgnoreCase("player")) return a.length == 2 ? CoreActions.onlineNames() : null;
 					if (a[0].equalsIgnoreCase("grant") || a[0].equalsIgnoreCase("revoke")) return a.length == 2 ? CoreActions.onlineNames() : a.length == 3 ? keys : null;
 					if (a[0].equalsIgnoreCase("play")) return a.length == 2 ? keys : a.length == 3 ? CoreActions.onlineNames() : null;
 					if (a[0].equalsIgnoreCase("bind")) {
@@ -125,6 +153,13 @@ public final class RunicFX {
 							.append(Component.text("  " + d.key + " · " + d.category + " · " + d.type.name().toLowerCase(Locale.ROOT)
 									+ (d.enabled ? "" : " · off"), NamedTextColor.DARK_GRAY)));
 				}
+				return;
+			case "player":
+				if (!(s instanceof Player) || a.length < 2) {
+					Ui.error(s, "Usage (in game): /rs fx player <name>");
+					return;
+				}
+				FxStaffRewards.manageByName((Player) s, a[1]);
 				return;
 			case "reload":
 				FxStore.reload();
@@ -227,7 +262,7 @@ public final class RunicFX {
 				return;
 			}
 			default:
-				Ui.error(s, "Usage: /rs fx [menu|play <fx> [player]|list|bind <event> <fx|none>|grant <player> <fx> [days]|revoke <player> <fx>|reload]");
+				Ui.error(s, "Usage: /rs fx [menu|play <fx> [player]|list|bind <event> <fx|none>|grant <player> <fx> [days]|revoke <player> <fx>|player <name>|reload]");
 		}
 	}
 

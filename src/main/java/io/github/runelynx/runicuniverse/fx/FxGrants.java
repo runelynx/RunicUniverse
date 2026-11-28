@@ -93,7 +93,7 @@ public final class FxGrants {
 		return m;
 	}
 
-	private static Map<String, Grant> load(UUID id) {
+	static Map<String, Grant> load(UUID id) {
 		Map<String, Grant> m = new ConcurrentHashMap<>();
 		try (Connection c = FxStore.db().openConnection();
 			 PreparedStatement ps = c.prepareStatement("SELECT * FROM rp_RunicFXGrants WHERE UUID = ?")) {

@@ -89,6 +89,10 @@ final class FxMenu {
 			g.set(46, Gui.item("CHEST", "&f&lRewards", "&7Reward rules (ranks, EL, mazes)", "&7and the welcome-back reward"), (pl, t) -> FxStaffRewards.rewards(pl));
 			g.set(47, Gui.item("BARRIER", "&f&lZones", "&7Where players' effects may or", "&7may not play (games, mazes, worlds)"), (pl, t) -> FxStaffRewards.zones(pl));
 		}
+		g.set(51, Gui.item("PLAYER_HEAD", "&f&lManage a player", "&7Their settings, event effects and", "&7given effects. Click: online players.", "&eRight-click: type any name (offline too)"), (pl, t) -> {
+			if (t.isRightClick()) FxPrompt.ask(pl, "Whose RunicFX? (player name)", n -> FxStaffRewards.manageByName(pl, n));
+			else FxStaffRewards.pickManage(pl);
+		});
 		g.set(52, Gui.item("NETHER_STAR", "&fPlayer view", "&7Open /runicfx as players see it"), (pl, t) -> FxPlayerMenu.main(pl, 0));
 		g.set(53, Gui.item("SUNFLOWER", "&fRefresh", "&7Picks up edits made on other servers"), (pl, t) -> {
 			FxStore.reload();
