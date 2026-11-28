@@ -73,9 +73,45 @@ public final class FxEngine {
 			budgetTick = now;
 			tickBudget = 0;
 		}
-		if (tickBudget + n > MAX_PER_TICK) return false;
+		if (tickBudget + n > MAX_PER_TICK) {
+			capReached();
+			return false;
+		}
 		tickBudget += n;
 		return true;
+	}
+
+	/** Effects currently animating on this server (for the cap notice). */
+	static final java.util.concurrent.atomic.AtomicInteger RUNNING = new java.util.concurrent.atomic.AtomicInteger();
+
+	private static final long CAP_NOTICE_COOLDOWN = 24L * 60 * 60 * 1000;
+	private static long lastCapNotice = -1;
+
+	/**
+	 * The server-wide particle cap was hit: tell staff through the audit log (file + Discord audit channel when the
+	 * webhook is set), at most once a day per server. The time is kept in a file so restarts don't reset it.
+	 */
+	private static void capReached() {
+		long now = System.currentTimeMillis();
+		java.io.File f = new java.io.File(RunicUniverse.getInstance().getDataFolder(), "runicfx-cap-notice.txt");
+		if (lastCapNotice < 0) {
+			try {
+				lastCapNotice = Long.parseLong(new String(java.nio.file.Files.readAllBytes(f.toPath())).trim());
+			} catch (Exception e) {
+				lastCapNotice = 0;
+			}
+		}
+		if (now - lastCapNotice < CAP_NOTICE_COOLDOWN) return;
+		lastCapNotice = now;
+		try {
+			java.nio.file.Files.write(f.toPath(), String.valueOf(now).getBytes());
+		} catch (java.io.IOException ignored) {
+		}
+		String details = "the " + MAX_PER_TICK + " particles-per-tick limit was reached on " + RunicUniverse.SERVER_NAME + " with "
+				+ RUNNING.get() + " effect(s) running and " + Bukkit.getOnlinePlayers().size()
+				+ " player(s) online. Some particles were skipped to protect performance. (Next notice in 24h at the earliest.)";
+		RunicUniverse.getInstance().getLogger().warning("[RunicFX] " + details);
+		io.github.runelynx.runicuniverse.staff.Audit.log(Bukkit.getConsoleSender(), "RunicFX particle cap", details);
 	}
 
 	/** Play on a player (follows them when a step says so). */
@@ -150,9 +186,16 @@ public final class FxEngine {
 		final int count = Math.max(1, Math.min(400, s.count));
 		final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
+		RUNNING.incrementAndGet();
 		new BukkitRunnable() {
 			int t = 0;
 			final List<Drop> drops = new ArrayList<>();
+
+			@Override
+			public synchronized void cancel() throws IllegalStateException {
+				RUNNING.decrementAndGet();
+				super.cancel();
+			}
 
 			Location base() {
 				return s.follow && follow != null && follow.isValid() ? follow.getLocation() : origin;
