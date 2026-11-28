@@ -22,7 +22,7 @@ public final class FxEngine {
 	private FxEngine() {}
 
 	/** Particles offered in the editor (resolved per server version). DUST uses the step's colours and size. */
-	public static final List<String> PARTICLES = Arrays.asList("DUST", "END_ROD", "FLAME", "SOUL_FIRE_FLAME", "HAPPY_VILLAGER",
+	public static final List<String> PARTICLES = Arrays.asList("DUST", "FALLING_DUST", "END_ROD", "FLAME", "SOUL_FIRE_FLAME", "HAPPY_VILLAGER",
 			"FIREWORK", "ENCHANT", "WITCH", "HEART", "NOTE", "CLOUD", "CRIT", "PORTAL", "SNOWFLAKE", "GLOW", "ELECTRIC_SPARK",
 			"CHERRY_LEAVES", "TOTEM_OF_UNDYING", "DRAGON_BREATH", "SOUL", "ASH", "WAX_ON");
 
@@ -50,6 +50,28 @@ public final class FxEngine {
 
 	static boolean isDust(Particle p) {
 		return p != null && (p.name().equals("DUST") || p.name().equals("REDSTONE"));
+	}
+
+	static boolean isFallingDust(Particle p) {
+		return p != null && p.name().equals("FALLING_DUST");
+	}
+
+	/** FALLING_DUST takes its colour from a block: use the wool whose colour is closest to the hex colour. */
+	static Object fallingDustData(String hex) {
+		Color c = color(hex);
+		String best = "WHITE_WOOL";
+		long bestDist = Long.MAX_VALUE;
+		for (String[] p : FxMenu.PALETTE) {
+			Color pc = color(p[1]);
+			long dr = c.getRed() - pc.getRed(), dg = c.getGreen() - pc.getGreen(), db = c.getBlue() - pc.getBlue();
+			long dist = dr * dr + dg * dg + db * db;
+			if (dist < bestDist && p[2].endsWith("_WOOL")) {
+				bestDist = dist;
+				best = p[2];
+			}
+		}
+		org.bukkit.Material m = org.bukkit.Material.matchMaterial(best);
+		return (m == null ? org.bukkit.Material.WHITE_WOOL : m).createBlockData();
 	}
 
 	static Color color(String hex) {
@@ -114,6 +136,22 @@ public final class FxEngine {
 		io.github.runelynx.runicuniverse.staff.Audit.log(Bukkit.getConsoleSender(), "RunicFX particle cap", details);
 	}
 
+	/** How long an effect runs, in ticks (rain includes the time its slowest piece takes to land). */
+	public static int lengthTicks(FxDef d) {
+		if (d.type == FxDef.Type.COMMAND) return Math.max(1, d.repeat) * Math.max(1, d.interval);
+		int longest = 0;
+		for (FxStep s : d.steps) {
+			int len = s.delay + s.duration;
+			if (s.shape.equals("rain") && !s.particle.equals("FALLING_DUST")) {
+				len += (int) Math.ceil(Math.max(0, s.top - s.bottom) / Math.max(0.005, s.speedMin));
+			} else if (s.shape.equals("rain")) {
+				len += 60; // falling dust drifts down by itself for a few seconds
+			}
+			longest = Math.max(longest, len);
+		}
+		return Math.max(20, longest);
+	}
+
 	/** Play on a player (follows them when a step says so). */
 	public static boolean play(FxDef d, Player target) {
 		return play(d, target, target.getLocation());
@@ -165,7 +203,7 @@ public final class FxEngine {
 	}
 
 	private static final class Drop {
-		double dx, y, dz, speed; Object data;
+		double dx, y, dz, speed, lastDrawn = Double.NaN; Object data;
 	}
 
 	private static void start(FxStep s, Entity follow, Location origin) {
@@ -174,13 +212,15 @@ public final class FxEngine {
 			FxStore.warn("unknown particle " + s.particle + " on this server");
 			return;
 		}
-		final boolean dust = isDust(particle);
+		final boolean falling = isFallingDust(particle); // falls by itself: spawn once, never redraw
+		final boolean dust = isDust(particle) || falling;
 		final List<Object> dustData = new ArrayList<>();
 		if (dust) {
 			for (String c : s.colors.isEmpty() ? Collections.singletonList("#FFFFFF") : s.colors) {
-				dustData.add(new Particle.DustOptions(color(c), (float) Math.max(0.1, Math.min(4, s.size))));
+				dustData.add(falling ? fallingDustData(c) : new Particle.DustOptions(color(c), (float) Math.max(0.1, Math.min(4, s.size))));
 			}
 		}
+		final double spacing = Math.max(0.05, s.spacing);
 		final int duration = Math.max(1, Math.min(20 * 60, s.duration));
 		final int interval = Math.max(1, s.interval);
 		final int count = Math.max(1, Math.min(400, s.count));
@@ -231,11 +271,25 @@ public final class FxEngine {
 								d.y = s.top;
 								d.speed = s.speedMin + rnd.nextDouble() * Math.max(0, s.speedMax - s.speedMin);
 								d.data = data();
-								drops.add(d);
+								if (falling) {
+									// FALLING_DUST drifts down on its own: one particle per piece
+									if (spend(w, 1)) spawn(w, bx + d.dx, by + d.y, bz + d.dz, d.data);
+								} else {
+									drops.add(d);
+								}
 							}
 						}
-						if (spend(w, drops.size())) {
-							for (Drop d : drops) spawn(w, bx + d.dx, by + d.y, bz + d.dz, d.data);
+						// Particles linger on screen, so a piece is only redrawn once it has fallen `spacing` blocks
+						// (redrawing every tick drew solid streaks of 20-40 copies per piece).
+						List<Drop> due = new ArrayList<>();
+						for (Drop d : drops) {
+							if (Double.isNaN(d.lastDrawn) || d.lastDrawn - d.y >= spacing) due.add(d);
+						}
+						if (!due.isEmpty() && spend(w, due.size())) {
+							for (Drop d : due) {
+								spawn(w, bx + d.dx, by + d.y, bz + d.dz, d.data);
+								d.lastDrawn = d.y;
+							}
 						}
 						for (Iterator<Drop> it = drops.iterator(); it.hasNext();) {
 							Drop d = it.next();

@@ -19,6 +19,7 @@ public final class FxStep {
 	public int rate = 2;           // rain: new pieces per tick
 	public double speedMin = 0.03; // rain: fall speed range, blocks per tick
 	public double speedMax = 0.10;
+	public double spacing = 0.35;  // rain: blocks a piece falls between redraws (particles linger, so bigger = lighter)
 	public int duration = 40;      // ticks the step keeps animating
 	public int interval = 10;      // ticks between pulses (burst, ring, column, sphere)
 	public int delay = 0;          // ticks before the step starts
@@ -30,7 +31,7 @@ public final class FxStep {
 	public String serialize() {
 		return "shape=" + shape + " particle=" + particle + " colors=" + String.join(",", colors) + " size=" + fmt(size)
 				+ " count=" + count + " radius=" + fmt(radius) + " height=" + fmt(height) + " top=" + fmt(top)
-				+ " bottom=" + fmt(bottom) + " rate=" + rate + " speedMin=" + fmt(speedMin) + " speedMax=" + fmt(speedMax)
+				+ " bottom=" + fmt(bottom) + " rate=" + rate + " speedMin=" + fmt(speedMin) + " speedMax=" + fmt(speedMax) + " spacing=" + fmt(spacing)
 				+ " duration=" + duration + " interval=" + interval + " delay=" + delay + " follow=" + follow
 				+ " sound=" + (sound == null || sound.isEmpty() ? "-" : sound) + " volume=" + fmt(volume) + " pitch=" + fmt(pitch);
 	}
@@ -55,6 +56,7 @@ public final class FxStep {
 					case "rate": st.rate = Integer.parseInt(v); break;
 					case "speedMin": st.speedMin = Double.parseDouble(v); break;
 					case "speedMax": st.speedMax = Double.parseDouble(v); break;
+					case "spacing": st.spacing = Double.parseDouble(v); break;
 					case "duration": st.duration = Integer.parseInt(v); break;
 					case "interval": st.interval = Integer.parseInt(v); break;
 					case "delay": st.delay = Integer.parseInt(v); break;

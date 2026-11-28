@@ -46,6 +46,20 @@ final class FxMenu {
 		return Gui.item(d.icon, (d.enabled ? "&b" : "&8") + d.display, lore);
 	}
 
+	/**
+	 * Play an effect on the staff member, then bring back the menu they were on once it has finished
+	 * (effect length + 1 second), unless they've opened something else in the meantime.
+	 */
+	static void preview(Player p, FxDef d, Runnable reopen) {
+		p.closeInventory();
+		FxEngine.play(d, p);
+		long wait = (long) Math.ceil(FxEngine.lengthTicks(d) / 20.0) * 20 + 20;
+		org.bukkit.Bukkit.getScheduler().runTaskLater(io.github.runelynx.runicuniverse.RunicUniverse.getInstance(), () -> {
+			if (p.isOnline() && p.getOpenInventory().getType() == org.bukkit.event.inventory.InventoryType.CRAFTING) reopen.run();
+		}, Math.min(wait, 20L * 70));
+		Ui.info(p, "Playing " + d.display + ". This menu comes back in " + (wait / 20) + "s.");
+	}
+
 	// ------------------------------------------------------------------ main / library
 
 	static void main(Player p) {
@@ -59,7 +73,7 @@ final class FxMenu {
 				if (t.isRightClick()) options(pl, d);
 				else {
 					pl.closeInventory();
-					FxEngine.play(d, pl);
+					preview(pl, d, () -> main(pl));
 				}
 			});
 		}
@@ -85,7 +99,7 @@ final class FxMenu {
 		g.set(4, icon(d), null);
 		g.set(10, Gui.item("PLAYER_HEAD", "&fPlay on yourself"), (pl, t) -> {
 			pl.closeInventory();
-			FxEngine.play(d, pl);
+			preview(pl, d, () -> options(pl, d));
 		});
 		g.set(11, Gui.item("NAME_TAG", "&fPlay on a player"), (pl, t) -> StaffMenu.pickPlayer(pl, "&8Play " + d.display + " on", target -> {
 			pl.closeInventory();
@@ -248,7 +262,7 @@ final class FxMenu {
 		});
 		g.set(13, Gui.item("ENDER_EYE", "&a&lPreview", "&7Plays it on you"), (pl, t) -> {
 			pl.closeInventory();
-			FxEngine.play(d, pl);
+			preview(pl, d, () -> edit(pl, d));
 		});
 		if (d.type == FxDef.Type.RECIPE) {
 			int slot = 18;
@@ -342,14 +356,22 @@ final class FxMenu {
 			save(pl, d, "particle");
 			step(pl, d, idx);
 		});
-		g.set(11, Gui.item("PINK_DYE", "&fColours (" + s.colors.size() + ")", "&7Used by the DUST particle", "&eClick to pick colours"), (pl, t) -> palette(pl, d, idx));
+		boolean colourable = s.particle.equals("DUST") || s.particle.equals("FALLING_DUST");
+		g.set(11, Gui.item(colourable ? "PINK_DYE" : "GRAY_DYE", "&fColours (" + s.colors.size() + ")",
+				colourable ? "&7Used by this particle" : "&c" + s.particle + " has a fixed colour in Minecraft,",
+				colourable ? null : "&cso these colours don't apply to it.",
+				"&8Only DUST (any colour) and FALLING_DUST", "&8(nearest wool colour) can be coloured.", "&eClick to pick colours"),
+				(pl, t) -> palette(pl, d, idx));
 		num(g, 12, p, d, s, "Size", "SLIME_BALL", s.size, 0.1, 4, "Dust particle size", v -> s.size = v);
-		num(g, 13, p, d, s, "Count", "PRISMARINE_CRYSTALS", s.count, 1, 400, "Particles per pulse (burst, ring, column, sphere)", v -> s.count = (int) v);
+		num(g, 13, p, d, s, "Count", "PRISMARINE_CRYSTALS", s.count, 1, 400, "Particles per pulse (burst, ring, column, sphere; helix speed). Not used by rain.", v -> s.count = (int) v);
 		num(g, 14, p, d, s, "Radius", "TARGET", s.radius, 0, 16, "How wide (blocks)", v -> s.radius = v);
 		num(g, 15, p, d, s, "Height", "LADDER", s.height, -2, 10, "Centre height above the feet (burst, ring, sphere)", v -> s.height = v);
 		num(g, 16, p, d, s, "Top", "LADDER", s.top, -2, 12, "Upper height (rain, helix, column)", v -> s.top = v);
 		num(g, 17, p, d, s, "Bottom", "LADDER", s.bottom, -2, 12, "Lower height (rain, helix, column)", v -> s.bottom = v);
-		num(g, 18, p, d, s, "Rain rate", "BLUE_ICE", s.rate, 1, 20, "Rain: new pieces per tick", v -> s.rate = (int) v);
+		num(g, 18, p, d, s, "Rain rate", "BLUE_ICE", s.rate, 1, 20, "Rain: new pieces every tick (20 ticks = 1 second)", v -> s.rate = (int) v);
+		num(g, 28, p, d, s, "Trail spacing", "STRING", s.spacing, 0.05, 3,
+				"Rain: blocks a piece falls before it's drawn again. Particles linger, so bigger = lighter, fewer streaks. FALLING_DUST ignores this.",
+				v -> s.spacing = v);
 		num(g, 19, p, d, s, "Fall speed min", "FEATHER", s.speedMin, 0.005, 1, "Rain: slowest fall, blocks per tick", v -> s.speedMin = v);
 		num(g, 20, p, d, s, "Fall speed max", "FEATHER", s.speedMax, 0.005, 1, "Rain: fastest fall, blocks per tick", v -> s.speedMax = v);
 		num(g, 21, p, d, s, "Duration", "CLOCK", s.duration, 1, 1200, "Ticks it keeps going (20 = 1 second)", v -> s.duration = (int) v);
@@ -372,7 +394,7 @@ final class FxMenu {
 		num(g, 27, p, d, s, "Pitch", "BELL", s.pitch, 0.5, 2, "Sound pitch (0.5 low, 2 high)", v -> s.pitch = v);
 		g.set(40, Gui.item("ENDER_EYE", "&a&lPreview", "&7Plays the whole effect on you"), (pl, t) -> {
 			pl.closeInventory();
-			FxEngine.play(d, pl);
+			preview(pl, d, () -> step(pl, d, idx));
 		});
 		g.set(45, Gui.item("ARROW", "&7« " + d.display), (pl, t) -> edit(pl, d));
 		g.frameRow(5);
