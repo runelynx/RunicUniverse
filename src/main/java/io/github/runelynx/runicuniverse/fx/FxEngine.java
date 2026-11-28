@@ -254,6 +254,8 @@ public final class FxEngine {
 		new BukkitRunnable() {
 			int t = 0;
 			final List<Drop> drops = new ArrayList<>();
+			final Player owner = follow instanceof Player ? (Player) follow : null;
+			List<Player> viewers = null; // null = everyone nearby (nobody close is hiding effects)
 
 			@Override
 			public synchronized void cancel() throws IllegalStateException {
@@ -270,6 +272,14 @@ public final class FxEngine {
 			}
 
 			void spawn(World w, double x, double y, double z, Object data) {
+				if (viewers != null) {
+					for (Player v : viewers) {
+						if (note && data instanceof Double) v.spawnParticle(particle, x, y, z, 0, ((Double) data).doubleValue(), 0.0, 0.0, 1.0);
+						else if (data != null) v.spawnParticle(particle, x, y, z, 1, 0, 0, 0, 0, data);
+						else v.spawnParticle(particle, x, y, z, 1, 0, 0, 0, 0);
+					}
+					return;
+				}
 				if (note && data instanceof Double) {
 					// NOTE colour = offsetX (0-1 around the note wheel) when count is 0
 					w.spawnParticle(particle, x, y, z, 0, ((Double) data).doubleValue(), 0.0, 0.0, 1.0);
@@ -295,14 +305,20 @@ public final class FxEngine {
 				meta.addEffect(org.bukkit.FireworkEffect.builder().with(type).withColor(cols).flicker(s.flicker).trail(s.trail).build());
 				meta.setPower(0);
 				fw.setFireworkMeta(meta);
+				if (viewers != null) {
+					// hide the burst from players who hide others' effects (before the entity is ever sent to them)
+					for (Player p : w.getPlayers()) if (!viewers.contains(p)) p.hideEntity(RunicUniverse.getInstance(), fw);
+				}
 				fw.detonate();
 			}
 
 			@Override
 			public void run() {
+				if (t % 10 == 0) viewers = FxPrefs.viewers(base(), owner); // refreshed every half second
 				if (t == 0 && s.sound != null && !s.sound.isEmpty()) {
 					Location l = base();
-					l.getWorld().playSound(l, s.sound, (float) s.volume, (float) s.pitch);
+					if (viewers == null) l.getWorld().playSound(l, s.sound, (float) s.volume, (float) s.pitch);
+					else for (Player v : viewers) v.playSound(l, s.sound, (float) s.volume, (float) s.pitch);
 				}
 				Location b = base();
 				World w = b.getWorld();

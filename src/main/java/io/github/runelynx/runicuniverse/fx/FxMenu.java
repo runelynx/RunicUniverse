@@ -85,6 +85,11 @@ final class FxMenu {
 			g.set(50, Gui.item("EMERALD", "&a&lCreate a new effect", "&7Build from steps (shapes, colours,", "&7timing) or from commands"),
 					(pl, t) -> FxPrompt.ask(pl, "Name for the new effect", name -> createType(pl, name.trim())));
 		}
+		if (build) {
+			g.set(46, Gui.item("CHEST", "&f&lRewards", "&7Reward rules (ranks, EL, mazes)", "&7and the welcome-back reward"), (pl, t) -> FxStaffRewards.rewards(pl));
+			g.set(47, Gui.item("BARRIER", "&f&lNo-FX zones", "&7Places where players' effects", "&7never play (games, mazes...)"), (pl, t) -> FxStaffRewards.zones(pl));
+		}
+		g.set(52, Gui.item("NETHER_STAR", "&fPlayer view", "&7Open /runicfx as players see it"), (pl, t) -> FxPlayerMenu.main(pl, 0));
 		g.set(53, Gui.item("SUNFLOWER", "&fRefresh", "&7Picks up edits made on other servers"), (pl, t) -> {
 			FxStore.reload();
 			main(pl);
@@ -136,7 +141,30 @@ final class FxMenu {
 						Audit.log(pl, d.enabled ? "fx on" : "fx off", d.key);
 						options(pl, d);
 					}, () -> options(pl, d)));
-			g.set(22, Gui.item("TNT", "&cDelete", "&7Removes it and anyone's event use of it"),
+			g.set(23, Gui.item(d.shown ? "SPYGLASS" : "GRAY_DYE", "&fShown to players: " + (d.shown ? "&ayes" : "&7no"),
+					d.shown ? "&7Players without it see it greyed out" : "&7Only players who have it see it",
+					d.shown ? "&7in /runicfx, with how to unlock it." : "&7in /runicfx.", "&eClick to switch"), (pl, t) -> {
+				d.shown = !d.shown;
+				save(pl, d, d.shown ? "shown to players" : "hidden from players");
+				options(pl, d);
+			});
+			g.set(24, Gui.item("OAK_SIGN", "&fHow to unlock", d.unlock == null || d.unlock.isEmpty() ? "&8Not set" : "&7" + d.unlock,
+					"&8Players see this on the locked effect", "&eClick to change", "&eRight-click to clear"), (pl, t) -> {
+				if (t.isRightClick()) {
+					d.unlock = "";
+					save(pl, d, "unlock text cleared");
+					options(pl, d);
+				} else {
+					FxPrompt.ask(pl, "How do players unlock " + d.display + "? (e.g. Reach Master rank)", txt -> {
+						d.unlock = txt.trim().length() > 200 ? txt.trim().substring(0, 200) : txt.trim();
+						save(pl, d, "unlock text");
+						options(pl, d);
+					});
+				}
+			});
+			g.set(25, Gui.item("EMERALD", "&a&lGive to a player", "&7Online or offline, forever or for some days"), (pl, t) -> FxStaffRewards.give(pl, d));
+			g.set(26, Gui.item("PLAYER_HEAD", "&fWho has it", "&7Players given this effect", "&8(rank permissions aren't listed)"), (pl, t) -> FxStaffRewards.owners(pl, d, 0));
+			g.set(22, Gui.item("TNT", "&cDelete", "&7Removes it, anyone's event use of it,", "&7and everyone who was given it"),
 					(pl, t) -> Confirm.menu(pl, "Delete " + d.display, Collections.singletonList("&cThis can't be undone."), () -> {
 						if (FxStore.delete(d.key)) Audit.log(pl, "fx delete", d.key + " (" + d.display + ")");
 						main(pl);
@@ -151,11 +179,12 @@ final class FxMenu {
 
 	static void events(Player p) {
 		Map<String, String> b = FxStore.bindings(p.getUniqueId());
-		Gui g = new Gui(3, "&8My event FX");
-		int slot = 10;
+		Gui g = new Gui(5, "&8My event FX");
+		int i = 0;
 		for (Map.Entry<String, String> e : FxEvents.EVENTS.entrySet()) {
+			if (i >= FxPlayerMenu.SLOTS.length) break;
 			FxDef d = b.containsKey(e.getKey()) ? FxStore.get(b.get(e.getKey())) : null;
-			g.set(slot++, Gui.item(d != null ? d.icon : "GRAY_DYE", "&f" + e.getValue(), "&7Plays: " + (d != null ? "&b" + d.display : "&8nothing"),
+			g.set(FxPlayerMenu.SLOTS[i++], Gui.item(d != null ? d.icon : "GRAY_DYE", "&f" + e.getValue(), "&7Plays: " + (d != null ? "&b" + d.display : "&8nothing"),
 					"", "&eClick to choose", d != null ? "&eRight-click to clear" : null), (pl, t) -> {
 				if (t.isRightClick()) {
 					FxStore.bind(pl.getUniqueId(), e.getKey(), null);
@@ -168,19 +197,21 @@ final class FxMenu {
 				}
 			});
 		}
-		g.set(18, Gui.item("ARROW", "&7« Library"), (pl, t) -> main(pl));
-		g.frameRow(0).frameRow(2);
+		g.set(36, Gui.item("ARROW", "&7« Library"), (pl, t) -> main(pl));
+		g.frameRow(0).frameRow(4);
 		g.openLater(p);
 	}
 
 	static void pickEvent(Player p, Consumer<String> chosen, Runnable back) {
-		Gui g = new Gui(3, "&8Use it for which event?");
-		int slot = 10;
+		Gui g = new Gui(5, "&8Use it for which event?");
+		int i = 0;
 		for (Map.Entry<String, String> e : FxEvents.EVENTS.entrySet()) {
-			g.set(slot++, Gui.item("CLOCK", "&f" + e.getValue()), (pl, t) -> chosen.accept(e.getKey()));
+			if (i >= FxPlayerMenu.SLOTS.length) break;
+			g.set(FxPlayerMenu.SLOTS[i++], Gui.item("CLOCK", "&f" + e.getValue(),
+					FxEvents.SURVIVAL_ONLY.contains(e.getKey()) ? "&8Happens on Survival" : null), (pl, t) -> chosen.accept(e.getKey()));
 		}
-		g.set(18, Gui.item("ARROW", "&7« Back"), (pl, t) -> back.run());
-		g.frameRow(0).frameRow(2);
+		g.set(36, Gui.item("ARROW", "&7« Back"), (pl, t) -> back.run());
+		g.frameRow(0).frameRow(4);
 		g.openLater(p);
 	}
 

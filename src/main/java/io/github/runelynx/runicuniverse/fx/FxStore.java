@@ -31,7 +31,15 @@ public final class FxStore {
 
 	/** The library, refreshed from the database at most every 30 s (edits made on another server show up soon). */
 	public static Collection<FxDef> library() {
-		if (System.currentTimeMillis() - loadedAt > 30_000) reload();
+		if (System.currentTimeMillis() - loadedAt > 30_000) {
+			if (LIBRARY.isEmpty() || !org.bukkit.Bukkit.isPrimaryThread()) {
+				reload();
+			} else {
+				// refresh in the background; keep serving the current copy meanwhile (no database wait on the main thread)
+				loadedAt = System.currentTimeMillis();
+				org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(RunicUniverse.getInstance(), FxStore::reload);
+			}
+		}
 		List<FxDef> l = new ArrayList<>(LIBRARY.values());
 		l.sort(Comparator.comparing((FxDef d) -> d.category).thenComparing(d -> d.display.toLowerCase(Locale.ROOT)));
 		return l;
@@ -60,6 +68,8 @@ public final class FxStore {
 				}
 				d.parse(rs.getString("Definition"));
 				d.enabled = rs.getInt("Enabled") == 1;
+				d.shown = rs.getInt("Shown") == 1;
+				d.unlock = rs.getString("UnlockText") == null ? "" : rs.getString("UnlockText");
 				d.createdBy = rs.getString("CreatedBy");
 				d.updatedBy = rs.getString("UpdatedBy");
 				d.updatedAt = rs.getLong("UpdatedAt");
@@ -85,9 +95,9 @@ public final class FxStore {
 		d.updatedAt = System.currentTimeMillis();
 		if (d.createdBy == null) d.createdBy = by;
 		try (Connection c = db().openConnection();
-			 PreparedStatement ps = c.prepareStatement("INSERT INTO rp_RunicFX (FxKey, DisplayName, Icon, Category, FxType, Definition, Enabled, CreatedBy, UpdatedBy, UpdatedAt)"
-					 + " VALUES (?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE DisplayName=VALUES(DisplayName), Icon=VALUES(Icon), Category=VALUES(Category),"
-					 + " FxType=VALUES(FxType), Definition=VALUES(Definition), Enabled=VALUES(Enabled), UpdatedBy=VALUES(UpdatedBy), UpdatedAt=VALUES(UpdatedAt)")) {
+			 PreparedStatement ps = c.prepareStatement("INSERT INTO rp_RunicFX (FxKey, DisplayName, Icon, Category, FxType, Definition, Enabled, CreatedBy, UpdatedBy, UpdatedAt, Shown, UnlockText)"
+					 + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE DisplayName=VALUES(DisplayName), Icon=VALUES(Icon), Category=VALUES(Category),"
+					 + " Shown=VALUES(Shown), UnlockText=VALUES(UnlockText), FxType=VALUES(FxType), Definition=VALUES(Definition), Enabled=VALUES(Enabled), UpdatedBy=VALUES(UpdatedBy), UpdatedAt=VALUES(UpdatedAt)")) {
 			ps.setString(1, d.key);
 			ps.setString(2, d.display);
 			ps.setString(3, d.icon);
@@ -98,6 +108,8 @@ public final class FxStore {
 			ps.setString(8, d.createdBy);
 			ps.setString(9, by);
 			ps.setLong(10, d.updatedAt);
+			ps.setInt(11, d.shown ? 1 : 0);
+			ps.setString(12, d.unlock == null ? "" : d.unlock);
 			ps.executeUpdate();
 		} catch (SQLException | RuntimeException e) {
 			warn("save failed: " + e.getMessage());
@@ -121,6 +133,7 @@ public final class FxStore {
 			warn("delete failed: " + e.getMessage());
 			return false;
 		}
+		FxGrants.forgetKey(key);
 		LIBRARY.remove(key);
 		for (Map<String, String> m : BINDINGS.values()) m.values().removeIf(k -> k.equals(key));
 		return true;

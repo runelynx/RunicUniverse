@@ -22,6 +22,8 @@ public final class FxDef {
 	public String category = "Magic";
 	public Type type = Type.RECIPE;
 	public boolean enabled = true;
+	public boolean shown = false;      // Phase 2: players without it see it (locked) in /runicfx
+	public String unlock = "";         // Phase 2: how players earn it, shown on the locked icon
 	public String createdBy, updatedBy;
 	public long updatedAt;
 
@@ -70,6 +72,7 @@ public final class FxDef {
 		d.category = category;
 		d.type = type;
 		d.enabled = enabled;
+		d.unlock = unlock;
 		d.parse(definition());
 		return d;
 	}

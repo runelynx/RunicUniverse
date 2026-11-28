@@ -46,3 +46,7 @@ commands:
       usage: /<command> [action] [args]
       permission: rp.staff
       permission-message: "Staff only."
+   runicfx:
+      description: "RunicFX - your particle effects: preview them, choose what plays on your events, settings"
+      usage: /<command>
+      aliases: [fx]
