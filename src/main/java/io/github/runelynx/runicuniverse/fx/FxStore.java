@@ -196,10 +196,11 @@ public final class FxStore {
 	/** Milliseconds since this player last left any server, or -1 if unknown. */
 	public static long sinceLastQuit(UUID id) {
 		try (Connection c = db().openConnection();
-			 PreparedStatement ps = c.prepareStatement("SELECT LastQuit FROM rp_RunicFXPresence WHERE UUID = ?")) {
+			 PreparedStatement ps = c.prepareStatement("SELECT LastQuit, Server FROM rp_RunicFXPresence WHERE UUID = ?")) {
 			ps.setString(1, id.toString());
 			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) return System.currentTimeMillis() - rs.getLong(1);
+				// A server switch always lands on a different server; coming back to the one you just left is a reconnect.
+				if (rs.next() && !RunicUniverse.SERVER_NAME.equalsIgnoreCase(rs.getString(2))) return System.currentTimeMillis() - rs.getLong(1);
 			}
 		} catch (SQLException | RuntimeException e) {
 			warn("presence read failed: " + e.getMessage());
